@@ -47,7 +47,7 @@ def _canned(name):
 
 @contextmanager
 def inject_faults(rate: float, types: list[str] | None = None, seed: int = 0,
-                  replay: bool = True):
+                  replay: bool = True, policy=None):
     """Wrap ``react.call_tool`` so each invocation fails with probability ``rate``.
 
     ``types`` selects which fault kinds may be drawn (default: all). When
@@ -56,17 +56,27 @@ def inject_faults(rate: float, types: list[str] | None = None, seed: int = 0,
     rate=0 baseline succeeds and the success-vs-fault-rate curve is reproducible
     without VPN/live backends. Set ``replay=False`` to use live backends. The
     wrapper records attempted/faulted counts on the yielded ``stats`` dict.
+
+    ``policy`` (a ``policy.RetryPolicy``) adds harness-enforced retry at the tool
+    boundary: a call that draws a retryable fault is re-attempted, drawing again from
+    the same seeded stream, up to ``policy.max_attempts`` attempts in total, so the
+    agent sees a fault only when every attempt fails or the fault is not retryable.
+    ``attempted`` then counts every attempt. ``None`` (the default) is fail-fast and
+    leaves the call path exactly as it was.
     """
     chosen = types or list(FAULT_TYPES)
     rng = random.Random(seed)
     real_call_tool = _react.call_tool
-    stats = {"attempted": 0, "faulted": 0, "by_type": {}}
+    stats = {"attempted": 0, "faulted": 0, "by_type": {}, "retried": 0}
+    last_kind: list[str | None] = [None]  # fault type of the latest attempt
 
-    async def faulted_call_tool(name, arguments, url):
+    async def one_attempt(name, arguments, url):
         stats["attempted"] += 1
+        last_kind[0] = None
         if rng.random() < rate:
             stats["faulted"] += 1
             kind = rng.choice(chosen)
+            last_kind[0] = kind
             stats["by_type"][kind] = stats["by_type"].get(kind, 0) + 1
             delivery, build = FAULT_TYPES[kind]
             if delivery == "raise":
@@ -74,6 +84,23 @@ def inject_faults(rate: float, types: list[str] | None = None, seed: int = 0,
             return build(name)
         return _canned(name) if replay else await real_call_tool(name, arguments, url)
 
+    async def retrying_call_tool(name, arguments, url):
+        for attempt in range(1, policy.max_attempts + 1):
+            try:
+                result = await one_attempt(name, arguments, url)
+            except Exception:
+                if attempt < policy.max_attempts and policy.is_retryable(last_kind[0]):
+                    stats["retried"] += 1
+                    continue
+                raise
+            if (last_kind[0] is not None and attempt < policy.max_attempts
+                    and policy.is_retryable(last_kind[0])):
+                stats["retried"] += 1
+                continue
+            return result
+        return result  # unreachable: the last attempt always returns or raises
+
+    faulted_call_tool = one_attempt if policy is None else retrying_call_tool
     _react.call_tool = faulted_call_tool
     try:
         yield stats

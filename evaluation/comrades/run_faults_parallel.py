@@ -25,6 +25,7 @@ import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+RETRY = "none"  # set from --retry; passed to every cell
 
 
 async def run_cell(rate: float, seed: int, requests: str, shard_dir: Path,
@@ -37,6 +38,7 @@ async def run_cell(rate: float, seed: int, requests: str, shard_dir: Path,
             sys.executable, str(HERE / "run_faults.py"),
             "--rates", str(rate), "--seeds", str(seed),
             "--requests", requests, "--out", str(out),
+            *(["--retry", RETRY] if RETRY != "none" else []),
             cwd=str(HERE), env=os.environ.copy(),
             stdout=asyncio.subprocess.DEVNULL,
             stderr=asyncio.subprocess.PIPE,
@@ -86,6 +88,10 @@ async def main() -> None:
     ap.add_argument("--requests", default="requests.jsonl")
     ap.add_argument("--out", default="results/rq1_recorded_seeds.csv")
     ap.add_argument("--concurrency", type=int, default=6)
+    ap.add_argument("--retry", choices=("none", "shared"), default="none",
+                    help="harness retry policy for every cell (default fail-fast)")
+    ap.add_argument("--shard-dir", default="results/shards",
+                    help="per-cell shard folder; use a new one so existing shards stay intact")
     ap.add_argument("--skip", default="",
                     help="comma list of rate:seed cells to skip, e.g. 0.0:1,0.0:2")
     ap.add_argument("--salvage", default="",
@@ -96,7 +102,9 @@ async def main() -> None:
     rates = [float(r) for r in args.rates.split(",")]
     seeds = [int(s) for s in args.seeds.split(",")]
     skip = {tuple(c.split(":")) for c in args.skip.split(",") if c}
-    shard_dir = Path("results/shards")
+    global RETRY
+    RETRY = args.retry
+    shard_dir = Path(args.shard_dir)
     shard_dir.mkdir(parents=True, exist_ok=True)
 
     cells = [(r, s) for r in rates for s in seeds

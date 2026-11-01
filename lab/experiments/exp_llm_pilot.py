@@ -17,7 +17,7 @@ import json
 import time
 from pathlib import Path
 
-from dal_lab.agent import run_agent
+from dal_lab.agent import STRATEGIES, run_agent
 from dal_lab.delegation import DelegationFacade
 from dal_lab.facades import open_store
 from dal_lab.obfuscate import ensure_obfuscated, rename_question, rename_workflows
@@ -39,7 +39,7 @@ FIELDS = ["model", "schema", "sf", "qid", "family", "has_workflow", "facade", "s
           "delegate_turns", "delegate_prompt_tokens", "delegate_completion_tokens",
           "seed", "temperature", "db_time_s", "db_mem_peak_bytes",
           "db_temp_table_peak_bytes", "db_spill_peak_bytes", "row_precision",
-          "row_recall"]
+          "row_recall", "agent", "reflections", "revised"]
 
 
 # Interfaces that can return a handle, so the agent may answer by reference.
@@ -88,6 +88,10 @@ def main() -> None:
     ap.add_argument("--temperature", type=float, default=0.0)
     ap.add_argument("--max-tokens", type=int, default=4096,
                     help="completion cap per turn; reasoning models may need more")
+    ap.add_argument("--agent", choices=STRATEGIES, default="react",
+                    help="agent strategy: react, chain of thought (cot) or self-reflection")
+    ap.add_argument("--max-reflections", type=int, default=1,
+                    help="reflection rounds for --agent reflect")
     ap.add_argument("--facades", nargs="+", default=list(FACADES))
     ap.add_argument("--schema", choices=("tpch", "obf", "tpcds", "itbench", "wide"), default="tpch",
                     help="obf: renamed TPC-H, the memorisation control; tpcds: the "
@@ -99,7 +103,7 @@ def main() -> None:
     if out.exists():
         with out.open() as fh:
             done = {(r["model"], r.get("schema") or "tpch", float(r["sf"]), r["qid"], r["facade"],
-                     r.get("seed") or None)
+                     r.get("seed") or None, r.get("agent") or "react")
                     for r in csv.DictReader(fh)}
     new_file = not out.exists()
     # Append with the file's own header, so adding columns never misaligns old rows.
@@ -107,6 +111,9 @@ def main() -> None:
     if not new_file:
         with out.open() as fh:
             fields = next(csv.reader(fh))
+        if args.agent != "react" and "agent" not in fields:
+            raise SystemExit(f"{out} predates the agent column; write {args.agent} runs to a "
+                             "new --out file so they are not mistaken for react runs")
     obf, ds = args.schema == "obf", args.schema == "tpcds"
     itb = args.schema == "itbench"
     if itb:  # --sf is the number of scenarios loaded: 1, 5 or 35
@@ -152,7 +159,7 @@ def main() -> None:
                 cols = [d[0] for d in con.execute(q.gold_sql).description]
                 for fname in args.facades:
                     if (args.model, args.schema, sf, qid, fname,
-                            None if args.seed is None else str(args.seed)) in done:
+                            None if args.seed is None else str(args.seed), args.agent) in done:
                         continue
                     if fname.startswith("a2a:"):  # delegate to a data agent over a facade
                         fac = DelegationFacade(lab.facades[fname[4:]], args.model,
@@ -163,7 +170,9 @@ def main() -> None:
                     tools = fac.bind(meter)
                     t0 = time.time()
                     run = run_agent(q.question, cols, fac.descriptors, tools, meter, llm,
-                                    allow_handles=fname in BY_REFERENCE)
+                                    allow_handles=fname in BY_REFERENCE,
+                                    strategy=args.agent,
+                                    max_reflections=args.max_reflections)
                     ok, row_p, row_r = (_grade(con, lab, q, run)
                                         if run.status == "answered" else (False, None, None))
                     for f in (lab.handle_facade, *lab.facades.values()):
@@ -183,6 +192,8 @@ def main() -> None:
                            "wall_s": round(time.time() - t0, 1),
                            "seed": args.seed, "temperature": args.temperature,
                            "row_precision": row_p, "row_recall": row_r,
+                           "agent": args.agent, "reflections": run.reflections,
+                           "revised": run.revised,
                            "db_time_s": round(run.data["latency_s"], 3),
                            "db_mem_peak_bytes": run.data["db_mem_peak_bytes"],
                            "db_temp_table_peak_bytes": run.data["db_temp_table_peak_bytes"],
@@ -198,10 +209,12 @@ def main() -> None:
                     fh.flush()
                     tf.write(json.dumps({"model": args.model, "schema": args.schema,
                                          "sf": sf, "qid": qid,
-                                         "facade": fname, "status": run.status,
+                                         "facade": fname, "agent": args.agent,
+                                         "status": run.status,
                                          "correct": ok, "transcript": run.transcript}) + "\n")
                     tf.flush()
-                    print(f"sf={sf} {qid} {fname:16s} {run.status:11s} correct={ok} "
+                    print(f"sf={sf} {qid} {fname:16s} {args.agent:7s} {run.status:11s} "
+                          f"correct={ok} "
                           f"steps={run.steps} prompt={run.llm['prompt_tokens']}", flush=True)
             con.close()
 

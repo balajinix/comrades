@@ -42,7 +42,7 @@ except ImportError:
     IDEH_AVAILABLE = False
     print("Warning: IDE-harness PTY adapter not available (pexpect missing)")
 
-PROXY_URL = os.getenv("RQ5_PROXY_URL", "http://localhost:8212/mcp")
+PROXY_URL = os.getenv("RQ5_PROXY_URL", "http://localhost:8202/mcp")
 PROXY_LOG = Path(os.getenv("RQ5_PROXY_LOG", str(HERE / "proxy_calls_rq5.jsonl")))
 CONTROL_TOOL = "__comrades_control__"
 
@@ -53,6 +53,11 @@ SYS_PROMPT = (
     "cost, ITSM, resilience, and infrastructure data. Use them to complete the task. "
     "Do not ask the user for confirmation; gather the data yourself and then answer."
 )
+# Optional written failure policy for the prose-retry arm (unset keeps the neutral
+# prompt, so the shipped-default runs are unchanged).
+if os.getenv("RQ5_PROSE_POLICY") == "shared":
+    from policy import SHARED_RETRY  # noqa: E402
+    SYS_PROMPT += " " + SHARED_RETRY.to_prose()
 
 
 def _mcp_call(url, tool, args):

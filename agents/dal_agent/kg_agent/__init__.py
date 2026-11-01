@@ -26,6 +26,7 @@ from .config import (
 )
 from .llm import resolve_model
 from .models import KgOutput, Rendering, Graph, TraceStep
+from .react import _strategy as _agent_strategy
 from .react import run_react
 from .synthesizer import synthesize
 
@@ -199,7 +200,10 @@ async def run_agent(
     # The original cached row keeps its data; this row is the access log.
     started_at = datetime.utcnow()
     lookup_start = time.monotonic()
-    cached = await _cache_lookup(question, resolved_model)
+    # The cache is keyed by question and model only, so a run under a non-default
+    # agent strategy must neither read nor write it.
+    default_strategy = _agent_strategy()[0] == "react"
+    cached = await _cache_lookup(question, resolved_model) if default_strategy else None
     lookup_elapsed = time.monotonic() - lookup_start
     if cached is not None:
         logger.info(
@@ -234,7 +238,7 @@ async def run_agent(
 
     run_id = uuid4().hex
     started_at = datetime.utcnow()
-    trace, elapsed = await run_react(question, max_steps, mcp_servers=mcp_servers, model=model)
+    trace, elapsed, tokens = await run_react(question, max_steps, mcp_servers=mcp_servers, model=model)
     output = synthesize(question, trace, elapsed)
     output.model = resolved_model
     finished_at = datetime.utcnow()
@@ -242,7 +246,7 @@ async def run_agent(
     # Stash the cache key + payload only when the result is hittable.
     # Errors, blanks, and `**Error:**`-prefixed answers leave these NULL
     # so they can never be returned by a future cache lookup.
-    cacheable = _is_cacheable_output(output)
+    cacheable = default_strategy and _is_cacheable_output(output)
     await _persist(
         run_id=run_id,
         question=question,
@@ -260,6 +264,7 @@ async def run_agent(
         question_hash=_hash_question(question) if cacheable else None,
         output_json=output.model_dump_json() if cacheable else None,
         cache_hit=False,  # this is the original real-work run, not a hit
+        tokens=tokens,
     )
 
     return output
@@ -296,6 +301,7 @@ async def _persist(
     question_hash: str | None = None,
     output_json: str | None = None,
     cache_hit: bool = False,
+    tokens: dict[str, int] | None = None,
 ) -> None:
     """Best-effort write to runs + run_steps. Logs and swallows errors.
 
@@ -312,6 +318,11 @@ async def _persist(
         # Imported lazily so import-time of kg_agent doesn't require a DB.
         from .persistence.db import get_session
         from .persistence.models import Run, RunStep
+
+        # Persist token usage only when actually captured; NULL (not 0) means
+        # "no LLM work / provider reported nothing" so analytics can tell the
+        # difference. A run with an all-zero dict collapses to NULL too.
+        total = (tokens or {}).get("total") or None
 
         async with get_session() as session:
             session.add(Run(
@@ -331,6 +342,9 @@ async def _persist(
                 question_hash=question_hash,
                 output_json=output_json,
                 cache_hit=cache_hit,
+                prompt_tokens=(tokens or {}).get("prompt") if total else None,
+                completion_tokens=(tokens or {}).get("completion") if total else None,
+                total_tokens=total,
             ))
             for step in trace:
                 session.add(RunStep(

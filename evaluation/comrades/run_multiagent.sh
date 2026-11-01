@@ -12,13 +12,14 @@ RATES="${RATES:-0.0,0.3,0.6}"
 RETRIES="${RETRIES:-0,2}"
 REQUESTS="${REQUESTS:-$ROOT/evaluation/comrades/requests.jsonl}"
 OUT="${OUT:-$ROOT/evaluation/comrades/results/multiagent.csv}"
-DAL_DIR="$ROOT/dal_agent"
-DASH_DIR="$ROOT/dashboard_agent"
+DAL_DIR="${DAL_DIR:-$ROOT/agents/dal_agent}"
+DASH_DIR="${DASH_DIR:-$ROOT/agents/dashboard_agent}"
 [ -f "$OUT" ] && rm -f "$OUT"   # fresh sweep; mafetch appends per rate
 
-set -a; source "$DAL_DIR/.env" 2>/dev/null; set +a
+# Credentials already in the environment win over the agent's .env file.
+[ -n "${PROVIDER_API_KEY:-}" ] || { set -a; source "$DAL_DIR/.env" 2>/dev/null; set +a; }
 
-# Remote mcp_dal: set MCP_DAL_URL=http://internal-host:8201/mcp to run against
+# Remote mcp_dal: set MCP_DAL_URL=http://<host>:8201/mcp to run against
 # the real backends on the kg box. Replay defaults OFF for a remote (real) backend so
 # the agent actually queries live data, and ON for a local canned mcp_dal.
 MCP_DAL_URL="${MCP_DAL_URL:-${DAL_MCP_URL:-http://localhost:8201/mcp}}"
@@ -33,7 +34,7 @@ echo "mcp_dal=$MCP_DAL_URL  remote=$REMOTE_DAL  replay=$COMRADES_REPLAY"
 ensure_mcp_dal() {
   [ "$REMOTE_DAL" = 1 ] && { echo "using remote mcp_dal; not starting a local server"; return; }
   lsof -nP -iTCP:8201 -sTCP:LISTEN >/dev/null 2>&1 && return
-  ( cd $HOME/src/mcp_dal && \
+  ( cd $HOME/code/kg/mcp_dal && \
     LITELLM_API_KEY=dummy LITELLM_BASE_URL=http://localhost:9999 \
     nohup venv/bin/dal-mcp-server --transport streamable-http --port 8201 \
       >/tmp/mcp_dal_server.log 2>&1 & ) ; sleep 7

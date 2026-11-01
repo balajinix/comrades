@@ -75,13 +75,15 @@ async def main():
     ap.add_argument("--requests", default="requests.jsonl")
     ap.add_argument("--out", default="results/rq3_inproc_fixed.csv")
     ap.add_argument("--concurrency", type=int, default=6)
+    ap.add_argument("--shard-dir", default="results/shards_rq3",
+                    help="per-cell shard folder; use a new one so existing shards stay intact")
     args = ap.parse_args()
 
     mechs = [m.strip() for m in args.mechanisms.split(",") if m.strip()]
     models = [m.strip() for m in args.models.split(",") if m.strip()]
     rates = [float(r) for r in args.rates.split(",")]
     seeds = [int(s) for s in args.seeds.split(",")]
-    shard_dir = Path("results/shards_rq3")
+    shard_dir = Path(args.shard_dir)
     shard_dir.mkdir(parents=True, exist_ok=True)
 
     cells = [(m, mdl, r, s) for m in mechs for mdl in models for r in rates for s in seeds]

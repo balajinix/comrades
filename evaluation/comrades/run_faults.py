@@ -30,6 +30,7 @@ if str(_DAL_AGENT) not in sys.path:
 from kg_agent import run_agent  # noqa: E402
 from metrics import capture_tokens  # noqa: E402
 from faults import inject_faults  # noqa: E402
+from policy import RetryPolicy  # noqa: E402
 from redundancy import classify_trace  # noqa: E402
 
 SAMPLE = [
@@ -37,7 +38,7 @@ SAMPLE = [
     {"id": "s2", "prompt": "What are the top cloud costs this month?"},
     {"id": "s3", "prompt": "Show the application topology from the observability platform"},
 ]
-# Remote-friendly: set MCP_DAL_URL (e.g. http://internal-host:8201/mcp)
+# Remote-friendly: set MCP_DAL_URL (e.g. http://<host>:8201/mcp)
 # to run against a remote mcp_dal; falls back to DAL_MCP_URL, then localhost.
 MCP = [("mcp_dal", os.getenv("MCP_DAL_URL") or os.getenv("DAL_MCP_URL")
         or "http://localhost:8201/mcp")]
@@ -104,6 +105,9 @@ async def main_async(args) -> None:
     # COMRADES_REPLAY=0 -> live: non-faulted calls hit the real mcp_dal (set MCP_DAL_URL).
     replay = os.getenv("COMRADES_REPLAY", "1") == "1"
     rows = []
+    # --retry shared: the harness retries transient faults at the tool boundary
+    # (policy.RetryPolicy: 3 attempts, never 401, no backoff). none = fail-fast.
+    policy = RetryPolicy() if args.retry == "shared" else None
     print(f"RQ1 fault-rate sweep: {len(requests)} requests x rates={rates} x seeds={seeds} "
           f"({'replay' if replay else 'LIVE'} backend; fail-fast agent)\n", flush=True)
     # Incremental checkpoint: write each row as it completes so a long live run
@@ -113,6 +117,13 @@ async def main_async(args) -> None:
     cols = ["id", "family", "fault_rate", "seed", "injected", "data_obtained",
             "messages", "tokens", "latency_s", "tool_steps", "errored_steps",
             "necessary", "redundant", "redundant_frac"]
+    # attempts = calls that reached the tool boundary (with retry, including the
+    # harness's re-attempts). Always written under retry; COMRADES_RECORD_ATTEMPTS=1
+    # adds it to fail-fast runs so both arms share one definition. Off by default, so
+    # existing runs keep their columns.
+    record_attempts = policy is not None or os.getenv("COMRADES_RECORD_ATTEMPTS") == "1"
+    if record_attempts:
+        cols.append("attempts")
     fcsv = open(out, "w", newline="")
     writer = csv.DictWriter(fcsv, fieldnames=cols, extrasaction="ignore")
     writer.writeheader(); fcsv.flush()
@@ -133,11 +144,14 @@ async def main_async(args) -> None:
                 # intended per-call fault model while staying deterministic.
                 req_seed = seed * 100_003 + idx
                 # Non-faulted calls: canned in replay mode; real backend when live.
-                with inject_faults(rate=rate, seed=req_seed, replay=replay) as fstats:
+                with inject_faults(rate=rate, seed=req_seed, replay=replay,
+                                   policy=policy) as fstats:
                     res = await one_run(item["prompt"], args.model, args.max_steps)
                 res.update(id=item["id"], family=item.get("family"),
                            fault_rate=rate, seed=seed,
                            injected=f"{fstats['faulted']}/{fstats['attempted']}")
+                if record_attempts:
+                    res["attempts"] = fstats["attempted"]
                 seed_rows.append(res); rate_rows.append(res); rows.append(res)
                 writer.writerow(res); fcsv.flush()
             per_seed_success.append(sum(r["data_obtained"] for r in seed_rows) / len(seed_rows))
@@ -160,6 +174,8 @@ def main() -> None:
     ap.add_argument("--model", default=os.getenv("PROVIDER_MODEL_NAME"))
     ap.add_argument("--max-steps", type=int, default=8)
     ap.add_argument("--out", default="results/faults.csv")
+    ap.add_argument("--retry", choices=("none", "shared"), default="none",
+                    help="none = fail-fast (the paper's rq1); shared = harness retry")
     asyncio.run(main_async(ap.parse_args()))
 
 

@@ -13,6 +13,20 @@ observation transform, such as compaction). Nothing else trims it, so context
 growth is real. The run stops on an answer, after ``max_steps`` tool calls, when a
 prompt exceeds ``context_limit`` tokens, or when cumulative input passes
 ``input_budget``.
+
+Three agent strategies share this loop, so they differ only in how the model
+reasons, never in the tools or the data it sees:
+
+- ``react``: act on observations turn by turn (the default and the original).
+- ``cot``: chain of thought first. One planning turn without tools, in which the
+  model reasons step by step about which tools to call and how to combine their
+  results; the plan then stays in context while it acts.
+- ``reflect``: self-reflection. When the model proposes an answer, it is asked to
+  critique the answer against the question and its observations, and may then
+  keep it, revise it, or call more tools. Up to ``max_reflections`` rounds.
+
+Every extra call goes through the same LLM gateway, so the cost of planning or
+reflecting is counted in the run's tokens like any other turn.
 """
 from __future__ import annotations
 
@@ -37,6 +51,23 @@ Tools (name, description, JSON schema of args):
 HANDLE_RULE = ('- if the result is large and you hold a result handle that contains exactly '
                'the answer rows, you may answer {"answer_handle": "<handle>"} instead.')
 
+STRATEGIES = ("react", "cot", "reflect")
+
+COT_PLAN = ("Before calling any tool, think step by step. Write a short numbered plan: what the "
+            "question needs, which tools you will call in which order, with which arguments, and "
+            "how you will combine their results into the answer columns. Do not call a tool yet "
+            "and do not answer yet. Reply in plain text.")
+
+COT_GO = "Now carry out your plan. From here on reply with exactly ONE JSON object per message."
+
+REFLECT = ("Before this answer is final, reflect on it. Check it against the question and your "
+           "observations: the right columns in the right order, every filter and join applied, "
+           "the right aggregation and grouping, ordering and limits, and whether any observation "
+           "was truncated or incomplete so that rows are missing. Then reply with ONE JSON object "
+           'that starts with a "reflection" field holding your critique, followed by either the '
+           'final "answer" (the same one if it is correct, a corrected one if not) or a "tool" '
+           "call if you need more data.")
+
 _JSON = re.compile(r"\{.*\}", re.DOTALL)
 
 
@@ -49,6 +80,9 @@ class AgentRun:
     answer_handle: str | None = None
     steps: int = 0
     tool_errors: int = 0
+    strategy: str = "react"
+    reflections: int = 0  # reflection rounds that ran
+    revised: bool = False  # whether a reflection changed the answer or reopened the search
     llm: dict = field(default_factory=dict)
     data: dict = field(default_factory=dict)
     transcript: list[dict] = field(default_factory=list)
@@ -108,7 +142,8 @@ def run_agent(question: str, columns: list[str], descriptors: list[dict],
               allow_handles: bool = False, max_steps: int = 12,
               context_limit: int = 120_000, input_budget: int = 600_000,
               extra_instructions: str = "",
-              on_turn: Callable[[], str | None] | None = None) -> AgentRun:
+              on_turn: Callable[[], str | None] | None = None,
+              strategy: str = "react", max_reflections: int = 1) -> AgentRun:
     """Run the ReAct loop for one question.
 
     Args:
@@ -125,18 +160,38 @@ def run_agent(question: str, columns: list[str], descriptors: list[dict],
         extra_instructions: Appended to the system prompt (e.g. a retry playbook).
         on_turn: Called after every model turn; a returned string stops the run
             with that status (e.g. a virtual-time deadline).
+        strategy: ``react``, ``cot`` or ``reflect`` (see the module docstring).
+        max_reflections: Reflection rounds allowed when ``strategy`` is ``reflect``.
 
     Returns:
         The :class:`AgentRun`.
     """
+    if strategy not in STRATEGIES:
+        raise ValueError(f"unknown strategy {strategy!r}; expected one of {STRATEGIES}")
     llm.reset()
     system = SYSTEM.format(handle_rule=HANDLE_RULE if allow_handles else "",
                            extra=extra_instructions,
                            tools=json.dumps(descriptors, indent=None))
     user = f"{question}\nAnswer columns, in order: {', '.join(columns)}"
     messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
-    run = AgentRun(status="max_steps")
+    run = AgentRun(status="max_steps", strategy=strategy)
+    if strategy == "cot":
+        # The plan request rides on the question turn, so no provider sees two user
+        # turns in a row.
+        messages[1]["content"] = f"{user}\n\n{COT_PLAN}"
+        try:
+            plan = llm.chat(messages)
+        except Exception as exc:  # noqa: BLE001 - provider errors vary
+            msg = str(exc).lower()
+            run.status = "overflow" if ("context" in msg or "token" in msg) else "llm_error"
+            run.transcript.append({"error": f"{type(exc).__name__}: {str(exc)[:300]}"})
+            run.llm, run.data = llm.totals(), meter.totals()
+            return run
+        run.transcript.append({"plan": plan[:4000]})
+        messages += [{"role": "assistant", "content": plan},
+                     {"role": "user", "content": COT_GO}]
     parse_failures = 0
+    pending: Any = None  # the answer awaiting reflection, as (kind, value)
     while True:
         try:
             text = llm.chat(messages)
@@ -167,12 +222,28 @@ def run_agent(question: str, columns: list[str], descriptors: list[dict],
             messages += [{"role": "assistant", "content": text},
                          {"role": "user", "content": "Reply with exactly one JSON object."}]
             continue
-        if "answer" in action:
-            run.status, run.answer = "answered", action["answer"]
+        if "reflection" in action:
+            run.transcript[-1]["reflection"] = str(action["reflection"])[:2000]
+        proposed = (("answer", action["answer"]) if "answer" in action else
+                    ("answer_handle", str(action["answer_handle"]))
+                    if "answer_handle" in action and allow_handles else None)
+        if proposed is not None:
+            if pending is not None and proposed != pending:
+                run.revised = True
+            if strategy == "reflect" and run.reflections < max_reflections:
+                run.reflections += 1
+                pending = proposed
+                messages += [{"role": "assistant", "content": text},
+                             {"role": "user", "content": REFLECT}]
+                continue
+            run.status = "answered"
+            if proposed[0] == "answer":
+                run.answer = proposed[1]
+            else:
+                run.answer_handle = proposed[1]
             break
-        if "answer_handle" in action and allow_handles:
-            run.status, run.answer_handle = "answered", str(action["answer_handle"])
-            break
+        if pending is not None:  # a reflection reopened the search
+            run.revised, pending = True, None
         if run.steps >= max_steps:
             run.status = "max_steps"
             break

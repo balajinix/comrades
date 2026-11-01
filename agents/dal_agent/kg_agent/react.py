@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import time
 from typing import Any
@@ -20,6 +21,45 @@ from .prompts import SYSTEM_PROMPT, parse_action_input, parse_step
 
 
 logger = logging.getLogger("kg_agent.react")
+
+
+# Agent strategies. ``react`` is the original loop and stays the default, so every
+# existing runner is unchanged. ``cot`` adds one chain-of-thought planning turn
+# before the loop; ``reflect`` asks the model to critique a proposed Final Answer
+# before it is accepted. Both keep the same tools, guards (loop detector, no-tool
+# strike, short circuit) and productive-step budget, and their extra LLM turns are
+# counted in the same token and message counters. Chosen per process by
+# COMRADES_AGENT_STRATEGY so the A2A service and every runner pick it up.
+STRATEGIES = ("react", "cot", "reflect")
+
+COT_PLAN = (
+    "Before you call any tool, think step by step. Write a short numbered plan: what the "
+    "question asks for, which tools from the catalog you will call in which order and "
+    "with which arguments, and how you will combine their results into the answer. Do "
+    "not emit an Action or a Final Answer yet. Reply with the plan only."
+)
+
+COT_GO = (
+    "Now carry out your plan. From here on follow the system prompt's format exactly: "
+    "Thought, then Action and Action Input, or Thought and Final Answer."
+)
+
+REFLECT = (
+    "Before this Final Answer is accepted, reflect on it. Check it against the question "
+    "and your observations: does it answer what was asked, is every figure taken from an "
+    "observation rather than assumed, does it say plainly which data could not be "
+    "obtained, and would another tool call fill a gap? Reply with a Thought holding your "
+    "critique, then either a Final Answer (the same one if it is right, a corrected one "
+    "if not) or an Action and Action Input if you need more data."
+)
+
+
+def _strategy() -> tuple[str, int]:
+    """(strategy, max reflection rounds) from the environment."""
+    name = os.getenv("COMRADES_AGENT_STRATEGY", "react").strip().lower() or "react"
+    if name not in STRATEGIES:
+        raise ValueError(f"COMRADES_AGENT_STRATEGY={name!r}; expected one of {STRATEGIES}")
+    return name, max(0, int(os.getenv("COMRADES_MAX_REFLECTIONS", "1")))
 
 
 # Loop-detection normalisation. The LLM often paraphrases when retrying — same
@@ -77,6 +117,8 @@ def _build_catalog(tools: list[dict[str, Any]]) -> str:
         "mcp_kg": "mcp_kg — graph & metadata (CEG, Federated Registry, ITOM, temporal-graph)",
         "mcp_dal": "mcp_dal — product & operational data (FinOps, APM, ITSM, Resilience, Infra)",
         "mcp_var": "mcp_var — resilience metrics (calculate_*)",
+        "a2a_peers": "a2a_peers — sibling agents you can delegate to "
+                     "(schema mapping, GraphQL generation)",
     }
 
     blocks: list[str] = []
@@ -95,13 +137,38 @@ def _build_catalog(tools: list[dict[str, Any]]) -> str:
     return "\n".join(blocks).strip()
 
 
+def _usage_from_response(response) -> tuple[int, int, int]:
+    """Best-effort (prompt, completion, total) token usage from an LLM response.
+
+    ChatLiteLLM surfaces usage in either LangChain's standard ``usage_metadata``
+    (input/output/total) or the raw ``response_metadata['token_usage']``
+    (prompt/completion/total); providers that report nothing yield all-zeros.
+    """
+    um = getattr(response, "usage_metadata", None)
+    if isinstance(um, dict) and um:
+        p = int(um.get("input_tokens") or 0)
+        c = int(um.get("output_tokens") or 0)
+        return p, c, int(um.get("total_tokens") or (p + c))
+    rm = getattr(response, "response_metadata", None) or {}
+    tu = rm.get("token_usage") or rm.get("usage") or {}
+    if isinstance(tu, dict) and tu:
+        p = int(tu.get("prompt_tokens") or 0)
+        c = int(tu.get("completion_tokens") or 0)
+        return p, c, int(tu.get("total_tokens") or (p + c))
+    return 0, 0, 0
+
+
 async def run_react(
     question: str,
     max_steps: int = KG_AGENT_MAX_STEPS,
     mcp_servers: list[tuple[str, str]] | None = None,
     model: str | None = None,
-) -> tuple[list[TraceStep], float]:
-    """Run the loop. Returns (trace, elapsed_seconds).
+    strategy: str | None = None,
+) -> tuple[list[TraceStep], float, dict[str, int]]:
+    """Run the loop. Returns (trace, elapsed_seconds, tokens).
+
+    `tokens` is a {prompt, completion, total} dict summed over every LLM call in
+    the loop (all-zero on the early-exit paths that make no LLM call).
 
     `mcp_servers` overrides the configured server list (`config.MCP_SERVERS`) —
     a list of `(label, url)` pairs. Useful for tests; production callers leave
@@ -111,13 +178,20 @@ async def run_react(
     per-user gating layer in the UI uses this to route premium users to a
     higher-tier model without touching the host env.
 
+    `strategy` overrides COMRADES_AGENT_STRATEGY (``react``, ``cot`` or ``reflect``).
+
     Errors at every step are caught and turned into either a terminal trace
     entry or a recoverable observation. The loop never raises — the caller
     can rely on always getting a list back.
     """
     start = time.monotonic()
+    env_strategy, max_reflections = _strategy()
+    strategy = (strategy or env_strategy).lower()
+    if strategy not in STRATEGIES:
+        raise ValueError(f"unknown strategy {strategy!r}; expected one of {STRATEGIES}")
+    tokens = {"prompt": 0, "completion": 0, "total": 0}
     if not question.strip():
-        return [], 0.0
+        return [], 0.0, tokens
 
     def _ms_since(t0: float) -> int:
         return int(round((time.monotonic() - t0) * 1000))
@@ -137,6 +211,7 @@ async def run_react(
                 elapsed_ms=_ms_since(start),
             )],
             time.monotonic() - start,
+            tokens,
         )
 
     if not tools:
@@ -148,6 +223,7 @@ async def run_react(
                 elapsed_ms=_ms_since(start),
             )],
             time.monotonic() - start,
+            tokens,
         )
 
     # Index for schema/argument-key lookup at call time.
@@ -198,6 +274,47 @@ async def run_react(
     step = 0
     HARD_ITER_CAP = max_steps + 5
 
+    # Chain of thought: one planning turn before the loop. The plan request rides
+    # on the question turn so no provider sees two user turns in a row. The plan is
+    # a trace step (counted as a message) and its tokens join the same counters.
+    if strategy == "cot":
+        step += 1
+        HARD_ITER_CAP += 1
+        step_t0 = time.monotonic()
+        messages[1] = HumanMessage(content=f"Question: {question.strip()}\n\n{COT_PLAN}")
+        try:
+            response = await llm.ainvoke(messages)
+            breaker.record_success()
+            p, c, t = _usage_from_response(response)
+            tokens["prompt"] += p
+            tokens["completion"] += c
+            tokens["total"] += t
+        except Exception as exc:
+            breaker.record_failure(exc)
+            logger.exception("LLM planning call failed")
+            trace.append(TraceStep(
+                step=step,
+                thought=f"LLM call failed: {type(exc).__name__}: {exc}",
+                final_answer=f"**Error:** LLM call failed while planning: {exc}",
+                elapsed_ms=_ms_since(step_t0),
+            ))
+            return trace, time.monotonic() - start, tokens
+        plan = response.content if hasattr(response, "content") else str(response)
+        trace.append(TraceStep(step=step, thought=f"Plan: {plan}",
+                               elapsed_ms=_ms_since(step_t0)))
+        messages.append(AIMessage(content=plan))
+        messages.append(HumanMessage(content=COT_GO))
+
+    # Self-reflection: a proposed Final Answer is held back for critique up to
+    # `max_reflections` times. A reflection that reopens the search goes through the
+    # same loop guard (seen signatures persist), so identical calls stay blocked. If
+    # the run then ends in an error, the held answer is kept, so reflecting never
+    # leaves the agent worse off than accepting its first answer.
+    reflections = 0
+    pending_final: str | None = None
+    if strategy == "reflect":
+        HARD_ITER_CAP += max_reflections
+
     while productive < max_steps and step < HARD_ITER_CAP:
         step += 1
         step_t0 = time.monotonic()
@@ -226,6 +343,10 @@ async def run_react(
         try:
             response = await llm.ainvoke(messages)
             breaker.record_success()
+            p, c, t = _usage_from_response(response)
+            tokens["prompt"] += p
+            tokens["completion"] += c
+            tokens["total"] += t
         except Exception as exc:
             breaker.record_failure(exc)
             logger.exception("LLM call failed at step %d", step)
@@ -287,6 +408,19 @@ async def run_react(
                 ))
                 break
 
+            if strategy == "reflect" and reflections < max_reflections:
+                reflections += 1
+                pending_final = final
+                trace.append(TraceStep(
+                    step=step,
+                    thought=thought,
+                    observation=f"REFLECT ({reflections}): proposed answer held for critique.",
+                    elapsed_ms=_ms_since(step_t0),
+                ))
+                messages.append(AIMessage(content=text))
+                messages.append(HumanMessage(content=REFLECT))
+                continue
+
             trace.append(TraceStep(
                 step=step,
                 thought=thought,
@@ -308,10 +442,12 @@ async def run_react(
                 for s in trace
             )
             if had_data and thought:
+                # After a reflection, a bare critique is not an answer; keep the
+                # answer that was held for critique instead.
                 trace.append(TraceStep(
                     step=step,
                     thought=thought,
-                    final_answer=thought,
+                    final_answer=pending_final if pending_final is not None else thought,
                     elapsed_ms=_ms_since(step_t0),
                 ))
                 break
@@ -479,4 +615,17 @@ async def run_react(
         messages.append(AIMessage(content=text))
         messages.append(HumanMessage(content=f"Observation: {observation}"))
 
-    return trace, time.monotonic() - start
+    if pending_final is not None:
+        last = trace[-1] if trace else None
+        ended_badly = (last is None or not last.final_answer
+                       or last.final_answer.startswith("**Error:**"))
+        if ended_badly:
+            trace.append(TraceStep(
+                step=step + 1,
+                thought="The run after reflection ended without a usable answer; "
+                        "keeping the answer proposed before reflection.",
+                final_answer=pending_final,
+                elapsed_ms=0,
+            ))
+
+    return trace, time.monotonic() - start, tokens
