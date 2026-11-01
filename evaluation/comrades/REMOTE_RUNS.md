@@ -47,22 +47,13 @@ agents/dal_agent/.venv/bin/python run_faults.py \
 python3 aggregate.py --rq1 results/rq1_remote.csv
 ```
 
-## 3. RQ2 — fail-fast vs retry (inter-agent)
-`run_multiagent.sh` auto-detects the remote URL, skips the local mcp_dal, and points
-the DAL agent at the kg box (replay off):
-```bash
-cd evaluation/comrades
-RATES=0.0,0.3,0.6 RETRIES=0,1,2,3 bash run_multiagent.sh
-python3 aggregate.py --rq2 results/multiagent.csv
-```
-
-## 4. RQ3 — architecture x model
+## 3. RQ3 — architecture x model
 The three architecture runners (`runners/{direct,mcp_only,a2a}.py`) read
 `MCP_DAL_URL` and take `--model`. Sweep the three locked models
 (`meta-llama/llama-3-3-70b-instruct`, `mistralai/mistral-medium-2505`,
 `ibm/granite-4-h-small`) x architecture x fault rate via the RQ3 driver (task #138).
 
-## 5. Schema-mapping family — gold-scored, multi-hop (real mcp_map_reflect)
+## 4. Schema-mapping family — gold-scored, multi-hop (real mcp_map_reflect)
 Drop `--mock`; the runner calls the real `mcp_map_reflect` at `MCP_MAP_REFLECT_URL`:
 ```bash
 cd evaluation/comrades/schema_map

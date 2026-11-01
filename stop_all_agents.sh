@@ -42,15 +42,11 @@ echo "Checking for any remaining processes on known ports..."
 declare -A port_names=(
     [8001]="GraphQL Agent"
     [8002]="Schema Mapping Agent"
-    [8003]="Dashboard Visualization Agent"
-    [8004]="Trace Pruning Agent"
-    [8101]="K8sCost MCP Server"
-    [8102]="Trace Sampling MCP Server"
+    [8005]="DAL Agent"
     [8080]="Host Agent Orchestrator"
-    [9090]="K8sCost Port-Forward"
 )
 
-for port in 8001 8002 8003 8004 8080 8101 8102 9090; do 
+for port in 8001 8002 8005 8080; do 
     pid=$(lsof -ti:$port 2>/dev/null || true)
     if [ ! -z "$pid" ]; then
         service_name=${port_names[$port]}

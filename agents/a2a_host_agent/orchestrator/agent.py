@@ -79,8 +79,6 @@ def get_agent_urls() -> List[str]:
     default_urls = [
         "http://localhost:8001",  # GraphQL Query Agent
         "http://localhost:8002",  # Schema Mapping Agent
-        "http://localhost:8003",  # Data Dashboard Agent
-        "http://localhost:8004",  # Trace Pruning Agent
         "http://localhost:8005",  # DAL Agent (mcp_dal via federated kg_agent)
     ]
     
@@ -196,27 +194,6 @@ class DALOrchestrator:
         
         # Define keyword patterns for each agent with more specific matching
         
-        # Trace Pruning Agent keywords (highest priority for cost/trace queries)
-        trace_pruning_keywords = [
-            'namespace allocation costs', 'allocation costs', 'namespace costs', 
-            'cost alerts', 'cloud costs', 'k8scost', 'kubernetes costs',
-            'trace sampling', 'sampling methods', 'trace data', 'trace optimization',
-            'reduce trace data', 'trace pruning', 'cost optimization',
-            'namespace allocation', 'cpu costs', 'ram costs', 'memory costs',
-            'cost reduction', 'data reduction', 'telemetry costs'
-        ]
-        
-        # Dashboard Agent keywords (visualization focus)
-        dashboard_keywords = [
-            'dashboard', 'visualize', 'visualization', 'chart', 'charts', 'graph', 'graphs',
-            'plot', 'plotting', 'create visualization', 'generate charts',
-            'performance metrics', 'trends', 'overview', 'comprehensive dashboard',
-            'interactive charts', 'data visualization', 'visual', 'analytics',
-            'show me data', 'display data', 'create charts', 'generate dashboard',
-            'endpoint visualizations', 'application performance', 'service metrics',
-            'endpoint metrics', 'performance trends', 'metrics overview'
-        ]
-        
         graphql_keywords = [
             'graphql', 'query', 'generate query', 'fetch data', 'database query',
             'apm_applications', 'graphql query', 'data query', 'sql query',
@@ -231,35 +208,6 @@ class DALOrchestrator:
         
         # Score each agent based on keyword matches
         scores = {}
-        
-        # Trace Pruning Agent scoring (highest priority for cost-related queries)
-        trace_score = 0
-        for keyword in trace_pruning_keywords:
-            if keyword in user_message_lower:
-                trace_score += 5  # High weight for exact matches
-        
-        # Special handling for "allocation costs" - should always go to trace pruning
-        if any(phrase in user_message_lower for phrase in ['allocation costs', 'namespace costs', 'cost alerts']):
-            trace_score += 10
-        
-        if trace_score > 0:
-            scores['Trace Pruning Agent'] = trace_score
-        
-        # Dashboard Agent scoring (only if not a cost query)
-        if trace_score == 0:  # Only consider dashboard if not a cost query
-            dashboard_score = 0
-            for keyword in dashboard_keywords:
-                if keyword in user_message_lower:
-                    dashboard_score += 3
-            
-            # Check for visualization indicators
-            viz_indicators = ['show me', 'display', 'visualize', 'chart', 'dashboard']
-            for indicator in viz_indicators:
-                if indicator in user_message_lower:
-                    dashboard_score += 2
-            
-            if dashboard_score > 0:
-                scores['Dashboard_Visualization_Agent'] = dashboard_score
         
         # GraphQL Agent scoring
         graphql_score = sum(2 if keyword in user_message_lower else 0 for keyword in graphql_keywords)
@@ -276,17 +224,6 @@ class DALOrchestrator:
             best_agent = max(scores, key=scores.get)
             print(f"🎯 Enhanced routing: '{user_message[:50]}...' -> {best_agent} (score: {scores[best_agent]})")
             return best_agent
-        
-        # Fallback: if no clear match, check for general data terms
-        data_terms = ['data', 'metrics', 'performance', 'analysis', 'report']
-        if any(term in user_message_lower for term in data_terms):
-            # If it contains cost-related terms, go to trace pruning
-            if any(cost_term in user_message_lower for cost_term in ['cost', 'allocation', 'namespace']):
-                print(f"🎯 Fallback to Trace Pruning for cost-related query: '{user_message[:50]}...'")
-                return 'Trace Pruning Agent'
-            else:
-                print(f"🎯 Fallback to Dashboard for general data query: '{user_message[:50]}...'")
-                return 'Dashboard_Visualization_Agent'
         
         # No clear match - let the LLM decide
         print(f"🤔 No clear routing match for: '{user_message[:50]}...', using LLM routing")
@@ -323,45 +260,12 @@ class DALOrchestrator:
         Available Agent Types:
         - GraphQL Query Agent: Generates and executes GraphQL queries from natural language
         - GraphQL_Schema_Mapping_Agent: Maps and transforms data schemas
-        - Dashboard_Visualization_Agent: Creates visualizations and dashboards from data
-        - Trace Pruning Agent: Analyzes traces, optimizes performance, and manages cloud costs
-
-        IMPORTANT AGENT CAPABILITIES:
-
-        Dashboard_Visualization_Agent:
-        - Has INTELLIGENT FILE MATCHING: Can automatically find the right data file based on user requests
-        - Has INTERNAL DATA ACCESS: Already has access to application metrics, endpoint metrics, and service metrics
-        - Does NOT need CSV data provided - it will find and use appropriate data files automatically
-        - Can handle visualization requests without additional data
-        - Can handle requests like "create endpoint visualizations" or "show application performance" without additional data
-
-        Trace Pruning Agent:
-        - Handles cost monitoring and optimization queries
-        - Manages namespace allocation costs, cloud costs, and cost alerts
-        - Provides trace data sampling and optimization
-        - Handles Kubernetes cost analysis and resource optimization
 
         ROUTING RULES:
-        - For cost-related queries (allocation costs, namespace costs, cost alerts): Use Trace Pruning Agent
-        - For visualization, dashboard, chart, or "show me" requests: Use Dashboard_Visualization_Agent
         - For GraphQL query generation: Use GraphQL Query Agent
         - For schema mapping/transformation: Use GraphQL_Schema_Mapping_Agent
 
         CRITICAL ROUTING INSTRUCTIONS:
-        - Trace Pruning Agent handles:
-          * "Show me namespace allocation costs"
-          * "Are there any cost alerts?"
-          * "What are my cloud costs?"
-          * "Optimize trace data"
-          * "Cost reduction workflows"
-
-        - Dashboard_Visualization_Agent handles:
-          * "Create endpoint visualizations"
-          * "Show application performance metrics"
-          * "Generate service health dashboard"
-          * "Visualize performance trends"
-          * "Create comprehensive dashboard"
-
         - GraphQL_Schema_Mapping_Agent handles:
           * "Map resilience vulnerabilities to optimizer entities"
           * "Transform schemas between systems"
@@ -382,11 +286,6 @@ class DALOrchestrator:
         <Currently Available Agents>
         {available_agents_text}
         </Currently Available Agents>
-
-        REMEMBER: 
-        - Trace Pruning Agent handles cost and resource optimization queries
-        - Dashboard_Visualization_Agent handles visualization and chart requests
-        - Both agents have their own data access capabilities
         """
 
     async def stream(self, query: str, session_id: str) -> AsyncIterable[Dict[str, Any]]:
@@ -690,8 +589,6 @@ class DALOrchestrator:
         task_templates = {
             "GraphQL Query Agent": f"GRAPHQL QUERY REQUEST\nTask ID: {task_id}\nTimestamp: {timestamp}\n\n{task}",
             "GraphQL_Schema_Mapping_Agent": f"SCHEMA MAPPING REQUEST\nTask ID: {task_id}\nTimestamp: {timestamp}\n\n{task}",
-            "Dashboard_Visualization_Agent": f"VISUALIZATION REQUEST\nTask ID: {task_id}\nTimestamp: {timestamp}\n\n{task}",
-            "Trace Pruning Agent": f"TRACE ANALYSIS REQUEST\nTask ID: {task_id}\nTimestamp: {timestamp}\n\n{task}",
         }
 
         return task_templates.get(agent_name, f"REQUEST\nTask ID: {task_id}\nTimestamp: {timestamp}\n\n{task}")
@@ -909,23 +806,8 @@ def _lazy_instruction(orchestrator: DALOrchestrator, context: ReadonlyContext) -
     Available Agent Types:
     - GraphQL Query Agent: Generates and executes GraphQL queries from natural language
     - GraphQL_Schema_Mapping_Agent: Maps and transforms data schemas
-    - Dashboard_Visualization_Agent: Creates visualizations and dashboards from data
-    - Trace Pruning Agent: Analyzes traces, optimizes performance, and manages cloud costs
-
-    IMPORTANT AGENT CAPABILITIES:
-
-    Dashboard_Visualization_Agent:
-    - Has INTELLIGENT FILE MATCHING: Can automatically find the right data file based on user requests
-    - Has INTERNAL DATA ACCESS: Already has access to application metrics, endpoint metrics, and service metrics
-    - Does NOT need CSV data provided - it will find and use appropriate data files automatically
-
-    Trace Pruning Agent:
-    - Handles cost monitoring and optimization queries
-    - Manages namespace allocation costs, cloud costs, and cost alerts
 
     ROUTING RULES:
-    - For cost-related queries (allocation costs, namespace costs, cost alerts): Use Trace Pruning Agent
-    - For visualization, dashboard, chart, or "show me" requests: Use Dashboard_Visualization_Agent
     - For GraphQL query generation: Use GraphQL Query Agent
     - For schema mapping/transformation: Use GraphQL_Schema_Mapping_Agent
 

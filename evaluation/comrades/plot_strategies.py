@@ -6,7 +6,7 @@ baseline for rq1 (results/rq1_recorded_seeds.csv). Writes into results/strategie
 only, so nothing under paper/ changes; copy a PDF into the paper by hand once its
 numbers are checked.
 
-    agents/dashboard_agent/.venv/bin/python evaluation/comrades/plot_strategies.py
+    agents/dal_agent/.venv/bin/python evaluation/comrades/plot_strategies.py
 
 Outputs (each skipped while its inputs are missing):
   rq1_strategies.pdf  success vs fault rate (95% CI across seeds) and tokens per task

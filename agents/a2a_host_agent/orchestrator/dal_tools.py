@@ -18,20 +18,12 @@ def coordinate_data_access(
     
     workflows = {
         "query": {
-            "sequence": ["GraphQL_Query_Agent", "Data_Dashboard_Agent"],
-            "description": "Query execution and visualization"
+            "sequence": ["GraphQL_Query_Agent"],
+            "description": "Query execution"
         },
         "mapping": {
-            "sequence": ["Schema_Mapping_Agent", "GraphQL_Query_Agent", "Data_Dashboard_Agent"],
-            "description": "Schema mapping, query, and visualization"
-        },
-        "performance": {
-            "sequence": ["Trace_Pruning_Agent", "GraphQL_Query_Agent", "Data_Dashboard_Agent"],
-            "description": "Performance analysis and reporting"
-        },
-        "comprehensive": {
-            "sequence": ["Trace_Pruning_Agent", "Schema_Mapping_Agent", "GraphQL_Query_Agent", "Data_Dashboard_Agent"],
-            "description": "Full DAL analysis workflow"
+            "sequence": ["Schema_Mapping_Agent", "GraphQL_Query_Agent"],
+            "description": "Schema mapping and query"
         },
         "custom": {
             "sequence": agents_needed,
@@ -215,10 +207,8 @@ def _generate_detailed_report(task: Dict[str, Any], results: List[Dict[str, Any]
 
 def _get_agent_specialization(agent_name: str) -> str:
     specializations = {
-        "Data_Dashboard_Agent": "Data visualization and dashboard creation",
         "GraphQL_Query_Agent": "Query execution and data retrieval",
-        "Schema_Mapping_Agent": "Data schema transformation and mapping",
-        "Trace_Pruning_Agent": "Performance analysis and trace optimization"
+        "Schema_Mapping_Agent": "Data schema transformation and mapping"
     }
     return specializations.get(agent_name, "General data analysis")
 

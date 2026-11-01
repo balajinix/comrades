@@ -4,8 +4,8 @@ A **data harness** for agentic data access across IT operations platforms, with 
 built-in **fault-injection harness** for testing it. COMRADES puts heterogeneous
 backends (cost, APM, ITSM, resilience, infrastructure) behind one MCP tool
 interface, serves a data-access agent in-process, over MCP or over A2A, and wraps
-the agent loop with production controls. Consumption agents (dashboards, schema
-mapping, trace pruning, GraphQL generation) and coding assistants are its clients.
+the agent loop with production controls. Consumption agents (schema mapping,
+GraphQL generation) and coding assistants are its clients.
 
 ### Coding-assistant results
 
@@ -51,16 +51,14 @@ A live demo (when running) is available at:
                  user / dev-ui
                       |  A2A
               UI-Orchestrator (a2a_host_agent)  :8080
-          ________________|________________________
-         |        |          |           |          |
-   GraphQL    Schema     Dashboard    Trace/DLM     DAL agent
-   Query      Mapping    (viz)        (pruning)     (federates mcp_dal)
-   :8001      :8002      :8003        :8004         :8005
-                                         |              |  MCP
-                                    MCP servers     mcp_dal  :8201
-                                  (K8sCost :8101,  (cost / APM / ITSM /
-                                   TraceSampling     resilience / infra)
-                                   :8102)
+          ________________|______________
+         |              |                |
+   GraphQL Query   Schema Mapping    DAL agent
+   :8001           :8002             (federates mcp_dal)  :8005
+                                         |  MCP
+                                     mcp_dal  :8201
+                                     (cost / APM / ITSM /
+                                      resilience / infra)
 ```
 
 | Component | Dir | Port | Role |
@@ -68,11 +66,8 @@ A live demo (when running) is available at:
 | UI-Orchestrator | `agents/a2a_host_agent/` | 8080 | ADK chat UI; routes requests to agents over A2A |
 | GraphQL Query Agent | `agents/graphql_query_agent/` | 8001 | NL → GraphQL query generation |
 | Schema Mapping Agent | `agents/schema_mapping_agent/` | 8002 | maps schemas across heterogeneous sources |
-| Dashboard (Visualization) Agent | `agents/dashboard_agent/` | 8003 | NL → Vega-Lite dashboards; can fetch data from the DAL agent over A2A |
-| Trace Pruning / DLM Agent | `agents/trace_pruning_agent/` | 8004 | cost-aware trace sampling & retention |
 | **DAL Agent** | `agents/dal_agent/` | 8005 | federated ReAct agent over the `mcp_dal` data-access layer |
 | `mcp_dal` (external) | `../kg/mcp_dal` | 8201 | MCP server: ~100 tools over cost/APM/ITSM/resilience/infra backends |
-| Data2Dashboard | `agents/data2dashboard/` | — | data-to-dashboard pipeline / evaluation |
 | COMRADES harness | `evaluation/comrades/` | — | communication-mechanism + failure-injection study |
 
 ---
@@ -196,7 +191,6 @@ The experiments are organized as research questions:
 | RQ | Question | Driver |
 |---|---|---|
 | **RQ1** | As the backend fault rate rises, how do a data agent's communication and task success change? | `run_faults.py` |
-| **RQ2** | How do fail-fast vs. retry designs trade success against communication amplification, and how much is redundant? (incl. the inter-agent consumption→DAL layer) | `run_multiagent.sh` |
 | **RQ3** | How do communication architecture (in-process / MCP / A2A) and model size shift the under-/over-communication frontier? | `run_rq3.py` |
 | **RQ4** | What operating point and guardrails best balance reliability vs. cost for SWE/SRE deploying data agents? | synthesis of RQ1–3, 5 |
 | **RQ5** | When AI coding harnesses (Claude Code, Codex, Gemini, IDE-harness) fetch data while completing a task, how does failure reshape their communication? (on hold) | `harness/` |
@@ -210,8 +204,6 @@ real one.
 cd evaluation/comrades
 # RQ1 — failure → communication (single agent):
 ../../agents/dal_agent/.venv/bin/python run_faults.py --rates 0.0,0.2,0.4,0.6 --seeds 1,2,3
-# RQ2 — fail-fast vs. retry (inter-agent):
-RATES=0.0,0.3,0.6 RETRIES=0,1,2,3 bash run_multiagent.sh
 # RQ3 — architecture × model sweep:
 ../../agents/dal_agent/.venv/bin/python run_rq3.py --mechanisms direct,mcp_only,a2a --rates 0.0,0.2,0.4,0.6
 # schema-mapping task family (gold-scored, multi-hop):
@@ -246,11 +238,9 @@ Plans and runbooks: **[evaluation/COMRADES_PLAN.md](evaluation/COMRADES_PLAN.md)
 ## Repository layout
 
 - `agents/a2a_host_agent/` — orchestrator (ADK) + A2A routing
-- `agents/graphql_query_agent/`, `agents/schema_mapping_agent/`, `agents/dashboard_agent/`,
-  `agents/trace_pruning_agent/` — specialized agents
+- `agents/graphql_query_agent/`, `agents/schema_mapping_agent/` — specialized agents
 - `agents/dal_agent/` — federated DAL agent (vendored `kg_agent`) over `mcp_dal`
 - `common/` — shared utilities (dataviz, mapping, provider, caching)
-- `agents/data2dashboard/` — data-to-dashboard pipeline + evaluation
 - `evaluation/` — datasets, eval scripts, and the COMRADES harness (`comrades/`)
 - `scripts/` — `comrades_up.sh`, `comrades_down.sh`, `ask.py`
 - `ui/`, `demo/` — UI and demo assets

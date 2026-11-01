@@ -19,7 +19,6 @@ the originals remain the source of truth.
 | File | Rows | Paper element | Source |
 |---|---|---|---|
 | `rq1_success_vs_faultrate.csv` | 600 | RQ1: Table II + Fig. (recorded, 3 seeds × 4 rates × 50) | `results/rq1_recorded_seeds.csv` |
-| `rq2_failfast_vs_retry.csv` | 300 | RQ2: Table + by-family figure (A2A amplification) | `results/multiagent.csv` |
 | `rq3_arch_model_inproc.csv` | 1200 | RQ3: Table III, `direct`/`mcp` rows (50-req live, fixed seeding) | `results/rq3_inproc_live_fixed.csv` |
 | `rq3_arch_model_a2a.csv` | 600 | RQ3: Table III, `a2a` rows | `results/rq3_a2a.csv` |
 | `rq4_harness_claude.csv` | 60 | RQ4: Table (Claude Code) | `harness/results/rq5_claude.csv` |

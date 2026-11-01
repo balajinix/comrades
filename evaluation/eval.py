@@ -119,11 +119,7 @@ class JSONLDatasetLoader:
             difficulty = 'hard'
         
         # Determine target agent
-        if 'visualize' in utterance or 'chart' in utterance or 'dashboard' in utterance:
-            agent_name = 'Dashboard_Visualization_Agent'
-        elif 'cost' in utterance or 'allocation' in utterance or 'trace' in utterance:
-            agent_name = 'Trace Pruning Agent'
-        elif 'map' in utterance or 'transform' in utterance or 'schema' in utterance:
+        if 'map' in utterance or 'transform' in utterance or 'schema' in utterance:
             agent_name = 'GraphQL_Schema_Mapping_Agent'
         else:
             agent_name = 'GraphQL Query Agent'
@@ -224,8 +220,7 @@ class SimpleEvaluationScorer:
         # Agent routing success indicators
         agent_routing_indicators = [
             'sending message to', 'direct routing to', 'enhanced routing',
-            'dashboard_visualization_agent', 'graphql query agent',
-            'trace pruning agent', 'schema_mapping_agent'
+            'graphql query agent', 'schema_mapping_agent'
         ]
         for indicator in agent_routing_indicators:
             if indicator in response_lower:
@@ -430,7 +425,7 @@ class ComprehensiveMultiExperimentEvaluator:
         self.max_retries = max_retries  # Max retries for rate-limited requests
         self.limit = limit  # Limit number of test cases (0 = all)
         print(f"🤖 Initialized evaluator for COMRADES orchestrator at {orchestrator_url}")
-        print("📋 Will test: GraphQL Query Agent, Schema Mapping Agent, Dashboard Agent, Trace Pruning Agent")
+        print("📋 Will test: GraphQL Query Agent, Schema Mapping Agent")
         print(f"⏱️  Request delay: {request_delay}s (increase with --delay if hitting rate limits)")
         print(f"🔄 Max retries: {max_retries} (for rate-limited requests)")
         if limit > 0:

@@ -3,7 +3,7 @@
 
 Requires matplotlib + pandas. Run from a venv that has them, e.g.:
 
-    agents/dashboard_agent/.venv/bin/python evaluation/comrades/plots.py
+    agents/dal_agent/.venv/bin/python evaluation/comrades/plots.py
 
 Reads the result CSVs under evaluation/comrades/results/ and writes vector PDFs
 (plus PNG previews) into paper/figures/. Charts are styled to match the IEEE

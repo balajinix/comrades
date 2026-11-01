@@ -3,7 +3,6 @@
 # Rerun the paper's ReAct experiments under other agent strategies, on the replay
 # substrate, so results do not rest on a single agent design.
 #   rq1  fail-fast fault-rate sweep (Table rq1)          run_faults_parallel.py
-#   rq2  dashboard agent over A2A, fail-fast vs retry    run_multiagent.sh
 #   rq3  direct vs MCP x three models (Table rq3)         run_rq3_parallel.py
 # The strategy is set by COMRADES_AGENT_STRATEGY, read by the data-access agent's
 # loop (agents/dal_agent/kg_agent/react.py). Every output goes to results/strategies/,
@@ -13,7 +12,7 @@
 # Needs PROVIDER_API_KEY (or PROVIDER_APIKEY), PROVIDER_PROJECT_ID and PROVIDER_URL.
 # Knobs: STRATEGIES (default "cot reflect"), RQ3_STRATEGIES (default "react cot reflect",
 # since the paper's rq3 ran live and needs a replay react baseline), EXPS (default
-# "rq1 rq2 rq3"), CONCURRENCY (default 6; keep the total across sessions near 8).
+# "rq1 rq3"), CONCURRENCY (default 6; keep the total across sessions near 8).
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$HERE"
@@ -22,7 +21,7 @@ OUTDIR=results/strategies
 mkdir -p "$OUTDIR"
 STRATEGIES="${STRATEGIES:-cot reflect}"
 RQ3_STRATEGIES="${RQ3_STRATEGIES:-react cot reflect}"
-EXPS="${EXPS:-rq1 rq2 rq3}"
+EXPS="${EXPS:-rq1 rq3}"
 CONC="${CONCURRENCY:-6}"
 LLAMA=meta-llama/llama-3-3-70b-instruct
 MODELS="$LLAMA,mistralai/mistral-medium-2505,ibm/granite-4-h-small"
@@ -55,14 +54,6 @@ for s in $STRATEGIES; do
       --requests requests.jsonl --out "$OUTDIR/rq1_$s.csv" \
       --shard-dir "$OUTDIR/shards_rq1_$s" --concurrency "$CONC"
     echo "[$(stamp)] rq1 $s done -> $OUTDIR/rq1_$s.csv"
-  fi
-done
-for s in $STRATEGIES; do
-  export COMRADES_AGENT_STRATEGY="$s"
-  if has rq2 && [ ! -s "$OUTDIR/multiagent_$s.csv" ]; then
-    echo "[$(stamp)] rq2 $s"
-    RATES=0.0,0.3,0.6 RETRIES=0,2 OUT="$HERE/$OUTDIR/multiagent_$s.csv.part" \
-      bash run_multiagent.sh && mv "$OUTDIR/multiagent_$s.csv.part" "$OUTDIR/multiagent_$s.csv"
   fi
 done
 if has rq3; then

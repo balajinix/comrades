@@ -13,7 +13,6 @@ return canned success, faulted ones fail. Live data is *not* needed for the robu
 | Harness | Entry point | Measures | Status |
 |---|---|---|---|
 | Single-agent fault sweep | `evaluation/comrades/run_faults.py` | task success, msgs, tokens, redundant-frac vs fault rate | OK (RQ1 pilot) |
-| Inter-agent fault sweep | `evaluation/comrades/run_multiagent.sh` + `agents/dashboard_agent/mafetch.py` | A2A message volume + success vs retry policy x fault rate | OK (RQ2 pilot) |
 | Mechanism comparison | `evaluation/comrades/run_comrades.py` | direct / mcp_only / a2a, no faults | OK |
 | Fault injector + replay | `agents/dal_agent/app/faults.py` (`COMRADES_FAULT_*`), `evaluation/comrades/faults.py` | — | OK |
 | Redundancy classifier | `evaluation/comrades/redundancy.py` | necessary vs redundant calls | OK |
@@ -52,8 +51,7 @@ backends required.
   collection method (curated from production-style utterances) and that difficulty
   is operationalized as backend-hops.
 
-**Small code change:** add a `--requests <jsonl>` loader to `run_faults.py` and
-`mafetch.py` (replace the hard-coded 3-item `SAMPLE`).
+**Small code change:** add a `--requests <jsonl>` loader to `run_faults.py`.
 
 ---
 
@@ -74,7 +72,6 @@ cd evaluation/comrades
 ### RQ2 — inter-agent fail-fast vs retry  (fills RQ2 frontier)
 ```bash
 RATES=0.0,0.2,0.4,0.6 RETRIES=0,1,2,3 \
-  bash evaluation/comrades/run_multiagent.sh        # restarts DAL svc per rate
 ```
 - Grid: 50 req x 4 rates x 4 retry policies x 3 seeds (loop seeds in the script).
 - Report task success and **A2A messages/request** per (rate, retry) — the
@@ -94,7 +91,6 @@ Two axes on top of the fault sweep:
 
 **Code change:** make `run_faults.py` honor `--mechanism {direct,mcp_only,a2a}`
 (in-process mechanisms self-inject; `a2a` uses the env-gated service injector via
-`run_multiagent.sh`). Then sweep mechanism x model x rate x seed.
 
 - Trim the grid (e.g. 30 req x 3 rates x 2 seeds) to keep 3x3 cells feasible.
 - Report how each architecture/model shifts position on the under-/over-comm frontier.

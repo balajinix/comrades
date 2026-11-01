@@ -4,12 +4,10 @@
 - RQ1 (run_faults.py -> results/faults.csv): per fault rate, task success (with a
   95% normal-approx CI on the success proportion over all runs at that rate), mean
   messages, mean tokens, mean redundant fraction.
-- RQ2 (run_multiagent.sh -> results/multiagent.csv): per (fault rate, retry
-  policy), mean inter-agent A2A calls and task success.
 
 Usage:
-    python aggregate.py --rq1 results/faults.csv --rq2 results/multiagent.csv
-Prints LaTeX \\midrule-separated rows ready to paste into tab:rq1 / the RQ2 table.
+    python aggregate.py --rq1 results/faults.csv --rq3 results/rq3.csv
+Prints LaTeX \\midrule-separated rows ready to paste into tab:rq1 / tab:rq3.
 No third-party deps (stdlib csv/statistics/math).
 """
 from __future__ import annotations
@@ -71,22 +69,6 @@ def rq1(path: str) -> None:
     print()
 
 
-def rq2(path: str) -> None:
-    rows = list(csv.DictReader(open(path)))
-    by = defaultdict(list)
-    for r in rows:
-        by[(_f(r["fault_rate"]), int(r["retries"]))].append(r)
-
-    print("% RQ2: inter-agent A2A calls + task success per (fault rate, retry policy)")
-    print("% Fault rate & Retries & A2A calls/req & Task success \\\\")
-    for (rate, retries) in sorted(by):
-        rr = by[(rate, retries)]
-        calls = _mean([_f(r["a2a_calls"]) for r in rr])
-        succ = _mean([_f(r["success"]) for r in rr])
-        print(f"{rate:.1f} & {retries} & {calls:.2f} & {succ:.2f} \\\\")
-    print()
-
-
 def _short_model(m: str) -> str:
     """Strip provider prefix for display: meta-llama/llama-3-3-70b-instruct -> llama-3-3-70b."""
     base = (m or "").split("/")[-1]
@@ -116,15 +98,12 @@ def rq3(path: str) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--rq1", default=None, help="results/faults.csv")
-    ap.add_argument("--rq2", default=None, help="results/multiagent.csv")
     ap.add_argument("--rq3", default=None, help="results/rq3.csv")
     args = ap.parse_args()
-    if not args.rq1 and not args.rq2 and not args.rq3:
-        ap.error("give --rq1, --rq2, and/or --rq3")
+    if not args.rq1 and not args.rq3:
+        ap.error("give --rq1 and/or --rq3")
     if args.rq1:
         rq1(args.rq1)
-    if args.rq2:
-        rq2(args.rq2)
     if args.rq3:
         rq3(args.rq3)
 

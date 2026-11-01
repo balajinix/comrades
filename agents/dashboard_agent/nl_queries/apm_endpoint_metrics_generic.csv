@@ -1,6 +1,0 @@
-query
-"Provide an overview of all the endpoints monitored in this dataset."
-"Identify endpoints with consistently high erroneous call rates."
-"Explore trends in traffic (calls per second) over time across all endpoints."
-"Break down the distribution of different endpoint types (e.g., HTTP, DATABASE)."
-"Identify any anomalies in performance metrics over time."
