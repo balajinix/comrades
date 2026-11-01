@@ -1,0 +1,8 @@
+results
+.venv
+
+# RQ5 harness proxy call logs (regenerated each run)
+comrades/harness/proxy_calls*.jsonl
+
+# transient gemini/antigravity workspace config (written per-run, cleaned after)
+comrades/.gemini/

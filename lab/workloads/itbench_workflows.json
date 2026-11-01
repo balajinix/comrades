@@ -1,0 +1,34 @@
+{
+ "pod_placement": {
+  "description": "Node a pod runs on, in a scenario.",
+  "params": [
+   "scenario",
+   "pod"
+  ],
+  "sql": "SELECT node_name FROM k8s_object WHERE kind = 'Pod' AND name = $pod AND scenario_id = $scenario::INTEGER"
+ },
+ "pods_on_node": {
+  "description": "Pods in namespace otel-demo on a node, in a scenario.",
+  "params": [
+   "scenario",
+   "node"
+  ],
+  "sql": "SELECT name FROM k8s_object WHERE kind = 'Pod' AND namespace = 'otel-demo' AND node_name = $node AND scenario_id = $scenario::INTEGER"
+ },
+ "service_callees": {
+  "description": "Services a service calls directly (from traces), in a scenario.",
+  "params": [
+   "scenario",
+   "service"
+  ],
+  "sql": "SELECT DISTINCT c.service FROM span c JOIN span p ON c.parent_span_id = p.span_id AND c.trace_id = p.trace_id AND c.scenario_id = p.scenario_id WHERE p.service <> c.service AND c.scenario_id = $scenario::INTEGER AND p.service = $service"
+ },
+ "service_error_spans": {
+  "description": "Error spans of a service (timestamp, operation, duration ms), in a scenario.",
+  "params": [
+   "scenario",
+   "service"
+  ],
+  "sql": "SELECT ts, operation, duration_ms FROM span WHERE service = $service AND status = 'Error' AND scenario_id = $scenario::INTEGER"
+ }
+}

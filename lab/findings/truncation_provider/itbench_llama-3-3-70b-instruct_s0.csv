@@ -1,0 +1,11 @@
+model,schema,sf,qid,family,has_workflow,facade,status,correct,steps,tool_errors,turns,prompt_tokens,completion_tokens,max_prompt_tokens,llm_latency_s,schema_tokens,calls,response_tokens,rows,response_bytes,by_reference,wall_s,delegate_turns,delegate_prompt_tokens,delegate_completion_tokens,seed,temperature,db_time_s,db_mem_peak_bytes,db_temp_table_peak_bytes,db_spill_peak_bytes,row_precision,row_recall
+provider/meta-llama/llama-3-3-70b-instruct,itbench,35.0,IT-G1,large,True,sql+silent,answered,False,1,0,2,8195,51,7308,4.01,702,1,6366,184,17741,False,8.0,,,,0,0.0,0.002,0,0,0,0.0,0.0
+provider/meta-llama/llama-3-3-70b-instruct,itbench,35.0,IT-G1,large,True,sql+labelled,answered,False,1,0,2,8210,51,7318,3.91,707,1,6371,184,17759,False,3.9,,,,0,0.0,0.001,0,0,0,0.0,0.0
+provider/meta-llama/llama-3-3-70b-instruct,itbench,35.0,IT-G2,large,False,sql+silent,parse_error,False,1,0,4,53174,12322,21542,247.19,702,1,12383,363,34978,False,247.2,,,,0,0.0,0.002,0,0,0,,
+provider/meta-llama/llama-3-3-70b-instruct,itbench,35.0,IT-G2,large,False,sql+labelled,answered,False,1,0,4,53209,9875,21552,184.18,707,1,12388,363,34996,False,184.2,,,,0,0.0,0.002,0,0,0,0.0,0.0
+provider/meta-llama/llama-3-3-70b-instruct,itbench,35.0,IT-G3,large,False,sql+silent,answered,False,1,0,3,55877,4159,29555,82.32,702,1,24516,1000,68551,False,82.4,,,,0,0.0,0.016,0,0,0,0.0,0.0
+provider/meta-llama/llama-3-3-70b-instruct,itbench,35.0,IT-G3,large,False,sql+labelled,answered,False,1,0,4,89673,8255,33709,159.3,707,1,24552,1000,68681,False,159.3,,,,0,0.0,0.018,0,0,0,0.0,0.0
+provider/meta-llama/llama-3-3-70b-instruct,itbench,35.0,IT-G4,large,False,sql+silent,answered,False,1,0,3,84041,7774,43633,169.67,702,1,38577,1000,106585,False,169.7,,,,0,0.0,0.002,0,0,0,0.0,0.0
+provider/meta-llama/llama-3-3-70b-instruct,itbench,35.0,IT-G4,large,False,sql+labelled,answered,False,1,0,3,84134,7777,43677,163.81,707,1,38613,1000,106715,False,163.9,,,,0,0.0,0.011,0,0,0,0.0,0.0
+provider/meta-llama/llama-3-3-70b-instruct,itbench,35.0,IT-G5,large,False,sql+silent,answered,True,1,0,2,4626,2494,3741,46.68,702,1,2802,67,8131,False,46.7,,,,0,0.0,0.002,0,0,0,1.0,1.0
+provider/meta-llama/llama-3-3-70b-instruct,itbench,35.0,IT-G5,large,False,sql+labelled,answered,True,1,0,2,4641,2494,3751,44.33,707,1,2807,67,8149,False,44.3,,,,0,0.0,0.001,0,0,0,1.0,1.0

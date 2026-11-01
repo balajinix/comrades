@@ -1,0 +1,7 @@
+model,schema,sf,qid,family,has_workflow,facade,status,correct,steps,tool_errors,turns,prompt_tokens,completion_tokens,max_prompt_tokens,llm_latency_s,schema_tokens,calls,response_tokens,rows,response_bytes,by_reference,wall_s,delegate_turns,delegate_prompt_tokens,delegate_completion_tokens,seed,temperature,db_time_s,db_mem_peak_bytes,db_temp_table_peak_bytes,db_spill_peak_bytes,row_precision,row_recall
+provider/openai/gpt-oss-120b,tpch,10.0,L1,lookup,True,fine_grained+ops,llm_error,False,2,2,2,8612,101,4330,2.63,3479,0,0,0,0,False,4.6,,,,0,0.0,0,0,0,0,,
+provider/openai/gpt-oss-120b,tpch,10.0,L2,lookup,True,generic,llm_error,False,0,0,0,0,0,0,0,429,0,0,0,0,False,1.9,,,,0,0.0,0,0,0,0,,
+provider/openai/gpt-oss-120b,tpch,10.0,L2,lookup,True,fine_grained,llm_error,False,0,0,0,0,0,0,0,2954,0,0,0,0,False,1.8,,,,0,0.0,0,0,0,0,,
+provider/openai/gpt-oss-120b,tpch,10.0,L2,lookup,True,sql+auto,llm_error,False,1,0,1,858,61,858,1.13,575,1,25,1,77,False,3.0,,,,0,0.0,0.001,18432,18432,0,,
+provider/openai/gpt-oss-120b,tpch,10.0,L2,lookup,True,skills,llm_error,False,1,1,1,456,113,456,2.13,231,0,0,0,0,False,4.1,,,,0,0.0,0,0,0,0,,
+provider/openai/gpt-oss-120b,tpch,10.0,L2,lookup,True,code,llm_error,False,1,0,1,708,96,708,1.48,466,1,16,0,49,False,3.9,,,,0,0.0,0.357,18432,18432,0,,

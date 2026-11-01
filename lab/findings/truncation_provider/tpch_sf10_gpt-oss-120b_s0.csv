@@ -1,0 +1,13 @@
+model,schema,sf,qid,family,has_workflow,facade,status,correct,steps,tool_errors,turns,prompt_tokens,completion_tokens,max_prompt_tokens,llm_latency_s,schema_tokens,calls,response_tokens,rows,response_bytes,by_reference,wall_s,delegate_turns,delegate_prompt_tokens,delegate_completion_tokens,seed,temperature,db_time_s,db_mem_peak_bytes,db_temp_table_peak_bytes,db_spill_peak_bytes,row_precision,row_recall
+provider/openai/gpt-oss-120b,tpch,10.0,G1,large_list,True,sql+silent,parse_error,False,1,0,4,102188,12658,37767,80.88,424,1,29137,1000,76914,False,85.0,,,,0,0.0,0.089,262144,0,0,,
+provider/openai/gpt-oss-120b,tpch,10.0,G1,large_list,True,sql+labelled,parse_error,False,3,1,6,154600,7051,61229,52.39,429,2,58690,2000,154419,False,52.6,,,,0,0.0,0.084,0,0,0,,
+provider/openai/gpt-oss-120b,tpch,10.0,G2,large_list,True,sql+silent,answered,False,1,0,4,86226,12224,29828,98.42,424,1,24220,1000,66758,False,98.6,,,,0,0.0,0.02,0,0,0,1.0,0.0511
+provider/openai/gpt-oss-120b,tpch,10.0,G2,large_list,True,sql+labelled,overflow,False,6,1,8,426692,10207,107781,96.7,429,5,121672,5000,338488,False,103.2,,,,0,0.0,0.07,0,0,0,,
+provider/openai/gpt-oss-120b,tpch,10.0,G3,large_list,False,sql+silent,parse_error,False,1,0,4,95485,12400,35533,144.35,424,1,24997,1000,69594,False,144.4,,,,0,0.0,0.026,6029312,0,0,,
+provider/openai/gpt-oss-120b,tpch,10.0,G3,large_list,False,sql+labelled,answered,False,3,1,5,112313,1508,55062,21.76,429,2,50093,2000,139845,False,21.9,,,,0,0.0,0.051,0,0,0,1.0,0.0
+provider/openai/gpt-oss-120b,tpch,10.0,G4,large_list,False,sql+silent,parse_error,False,1,0,4,67744,12356,26252,76.73,424,1,18025,1000,63464,False,76.8,,,,0,0.0,0.024,1310720,0,0,,
+provider/openai/gpt-oss-120b,tpch,10.0,G4,large_list,False,sql+labelled,overflow,False,2,0,3,20113,1575,18814,12.08,429,2,1252044,1001,4446893,False,29.2,,,,0,0.0,0.136,16515072,0,0,,
+provider/openai/gpt-oss-120b,tpch,10.0,G5,large_list,False,sql+silent,parse_error,False,0,0,3,2019,622,684,8.38,424,0,0,0,0,False,8.4,,,,0,0.0,0,0,0,0,,
+provider/openai/gpt-oss-120b,tpch,10.0,G5,large_list,False,sql+labelled,answered,False,3,1,4,81885,4834,54724,49.41,429,2,48177,2000,133273,False,49.8,,,,0,0.0,0.055,0,0,0,1.0,0.0
+provider/openai/gpt-oss-120b,tpch,10.0,G6,large_list,False,sql+silent,answered,True,1,0,2,4484,3374,3822,25.27,424,1,3072,103,8159,False,25.3,,,,0,0.0,0.02,0,0,0,1.0,1.0
+provider/openai/gpt-oss-120b,tpch,10.0,G6,large_list,False,sql+labelled,answered,True,1,0,2,4499,3419,3832,36.81,429,1,3077,103,8177,False,36.9,,,,0,0.0,0.023,0,0,0,1.0,1.0

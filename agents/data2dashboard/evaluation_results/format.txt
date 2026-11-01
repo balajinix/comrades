@@ -1,0 +1,4 @@
+For each data, there will be a csv having:
+1. Query
+2. Visualization error rate
+3. All the 5 metrics from the VLM

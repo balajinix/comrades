@@ -1,0 +1,8 @@
+model,schema,sf,qid,family,has_workflow,facade,status,correct,steps,tool_errors,turns,prompt_tokens,completion_tokens,max_prompt_tokens,llm_latency_s,schema_tokens,calls,response_tokens,rows,response_bytes,by_reference,wall_s,delegate_turns,delegate_prompt_tokens,delegate_completion_tokens,seed,temperature,db_time_s,db_mem_peak_bytes,db_temp_table_peak_bytes,db_spill_peak_bytes,row_precision,row_recall
+provider/ibm/granite-4-h-small,itbench,1.0,IT-L1,lookup,True,fine_grained+ops,llm_error,False,6,6,6,27385,413,4851,14.3,3620,0,0,0,0,False,16.2,,,,0,0.0,0,0,0,0,,
+provider/ibm/granite-4-h-small,itbench,1.0,IT-L1,lookup,True,sql+auto,llm_error,False,1,0,1,1085,61,1085,1.82,853,1,32,1,84,False,3.8,,,,0,0.0,0.001,34816,34816,0,,
+provider/ibm/granite-4-h-small,itbench,1.0,IT-L1,lookup,True,sql+schema,llm_error,False,0,0,0,0,0,0,0,147,0,0,0,0,False,1.9,,,,0,0.0,0,0,0,0,,
+provider/ibm/granite-4-h-small,itbench,1.0,IT-L1,lookup,True,skills,llm_error,False,1,0,1,415,84,415,4.97,237,1,125,0,554,False,6.9,,,,0,0.0,0.0,0,0,0,,
+provider/ibm/granite-4-h-small,itbench,1.0,IT-L1,lookup,True,graphql+agg,llm_error,False,0,0,0,0,0,0,0,2474,0,0,0,0,False,2.0,,,,0,0.0,0,0,0,0,,
+provider/ibm/granite-4-h-small,itbench,1.0,IT-L2,lookup,False,fine_grained+ops,llm_error,False,0,0,0,0,0,0,0,3620,0,0,0,0,False,2.0,,,,0,0.0,0,0,0,0,,
+provider/ibm/granite-4-h-small,itbench,1.0,IT-L2,lookup,False,handles,llm_error,False,0,0,0,0,0,0,0,827,0,0,0,0,False,1.9,,,,0,0.0,0,0,0,0,,

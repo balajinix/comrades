@@ -1,0 +1,42 @@
+[project]
+name = "graphql-query-agent"
+version = "0.1.0"
+description = "GraphQL Query Agent with A2A Protocol"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "a2a-sdk>=0.2.5,<0.3.0",
+    "httpx>=0.28.1",
+    "langchain-litellm>=0.1.0",
+    "langgraph>=0.3.21",
+    "langchain-huggingface",
+    "langchain-chroma",
+    "pydantic>=2.10.6",
+    "python-dotenv>=1.1.0",
+    "uvicorn>=0.34.2",
+    "langchain-core",
+    "sentence-transformers>=2.2.0",
+    "numpy>=1.24.0",
+    "requests>=2.31.0",
+    "litellm>=1.0.0",
+    "chromadb>=0.5,<0.6",
+    "sqlalchemy>=2.0.41",
+    "colorama>=0.4.6",
+    "traceloop-sdk>=0.40.14",
+    "opentelemetry-api>=1.35.0",
+    "opentelemetry-sdk>=1.35.0",
+    "opentelemetry-exporter-otlp>=1.35.0",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.35.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.35.0",
+    "langtrace-python-sdk>=3.8.18",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true

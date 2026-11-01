@@ -1,0 +1,50 @@
+{"id": "cost-01", "family": "cost", "prompt": "What are the top cloud costs this month?"}
+{"id": "cost-02", "family": "cost", "prompt": "Show AWS EC2 rightsizing recommendations."}
+{"id": "cost-03", "family": "cost", "prompt": "Are there any cost anomalies in the last 7 days?"}
+{"id": "cost-04", "family": "cost", "prompt": "List the billing accounts for AWS."}
+{"id": "cost-05", "family": "cost", "prompt": "What did we spend on Azure compute last month?"}
+{"id": "cost-06", "family": "cost", "prompt": "Break down cloud cost by service for the last 30 days."}
+{"id": "cost-07", "family": "cost", "prompt": "Which GCP services cost the most this quarter?"}
+{"id": "cost-08", "family": "cost", "prompt": "Show unblended cost by region for AWS."}
+{"id": "cost-09", "family": "cost", "prompt": "Find rightsizing opportunities for RDS instances."}
+{"id": "cost-10", "family": "cost", "prompt": "What is the total cloud spend across all vendors this month?"}
+{"id": "apm-01", "family": "apm", "prompt": "Show the application topology."}
+{"id": "apm-02", "family": "apm", "prompt": "What is the call volume for the otel-demo application in the last hour?"}
+{"id": "apm-03", "family": "apm", "prompt": "List the application perspectives on the observability platform."}
+{"id": "apm-04", "family": "apm", "prompt": "Show error rates for the checkout service."}
+{"id": "apm-05", "family": "apm", "prompt": "Get host CPU and memory metrics for the last 30 minutes."}
+{"id": "apm-06", "family": "apm", "prompt": "Are there any open observability events right now?"}
+{"id": "apm-07", "family": "apm", "prompt": "What is the SLO compliance for the payment service?"}
+{"id": "apm-08", "family": "apm", "prompt": "Show the latency trend for the frontend application."}
+{"id": "apm-09", "family": "apm", "prompt": "List recent releases tracked in the observability platform."}
+{"id": "apm-10", "family": "apm", "prompt": "Get the Kubernetes pod metrics for the production namespace."}
+{"id": "itsm-01", "family": "itsm", "prompt": "List up to 5 recent incidents."}
+{"id": "itsm-02", "family": "itsm", "prompt": "Show the most recent incident."}
+{"id": "itsm-03", "family": "itsm", "prompt": "Get incident INC0010001 by number."}
+{"id": "itsm-04", "family": "itsm", "prompt": "How many open incidents are there?"}
+{"id": "itsm-05", "family": "itsm", "prompt": "List the service desk users."}
+{"id": "itsm-06", "family": "itsm", "prompt": "Find knowledge articles about database failover."}
+{"id": "itsm-07", "family": "itsm", "prompt": "Summarize the critical incidents this week."}
+{"id": "itsm-08", "family": "itsm", "prompt": "Get details for the latest critical incident."}
+{"id": "itsm-09", "family": "itsm", "prompt": "List incidents assigned to the platform team."}
+{"id": "itsm-10", "family": "itsm", "prompt": "Show resolved incidents from the last 24 hours."}
+{"id": "resil-01", "family": "resilience", "prompt": "Show the resilience posture for the checkout application."}
+{"id": "resil-02", "family": "resilience", "prompt": "List the most critical compliance risks."}
+{"id": "resil-03", "family": "resilience", "prompt": "What policy violations exist for the production environment?"}
+{"id": "resil-04", "family": "resilience", "prompt": "Look up details for CVE-2023-45288."}
+{"id": "resil-05", "family": "resilience", "prompt": "Show resilience assessments from the last month."}
+{"id": "resil-06", "family": "resilience", "prompt": "Which applications have the most critical risks?"}
+{"id": "resil-07", "family": "resilience", "prompt": "List security risks for the checkout service."}
+{"id": "resil-08", "family": "resilience", "prompt": "Get the compliance risk summary across all applications."}
+{"id": "resil-09", "family": "resilience", "prompt": "Show the latest resilience grader posture."}
+{"id": "resil-10", "family": "resilience", "prompt": "Are there any high-severity policy violations?"}
+{"id": "infra-01", "family": "infra", "prompt": "List all AWS EC2 instances tagged environment=prod."}
+{"id": "infra-02", "family": "infra", "prompt": "Show all S3 buckets across accounts."}
+{"id": "infra-03", "family": "infra", "prompt": "Find compute instances in the us-east-1 region."}
+{"id": "infra-04", "family": "infra", "prompt": "Generate an infrastructure query for all running VMs."}
+{"id": "infra-05", "family": "infra", "prompt": "List Kubernetes clusters across cloud accounts."}
+{"id": "infra-06", "family": "infra", "prompt": "Show all load balancers tagged team=platform."}
+{"id": "infra-07", "family": "infra", "prompt": "Find untagged cloud resources."}
+{"id": "infra-08", "family": "infra", "prompt": "List all databases across AWS and Azure."}
+{"id": "infra-09", "family": "infra", "prompt": "Show network resources in the production VPC."}
+{"id": "infra-10", "family": "infra", "prompt": "Generate an IQL query for all GPU instances."}

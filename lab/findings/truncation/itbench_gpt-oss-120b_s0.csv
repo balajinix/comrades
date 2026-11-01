@@ -1,0 +1,16 @@
+model,schema,sf,qid,family,has_workflow,facade,status,correct,steps,tool_errors,turns,prompt_tokens,completion_tokens,max_prompt_tokens,llm_latency_s,schema_tokens,calls,response_tokens,rows,response_bytes,by_reference,wall_s,delegate_turns,delegate_prompt_tokens,delegate_completion_tokens,seed,temperature,db_time_s,db_mem_peak_bytes,db_temp_table_peak_bytes,db_spill_peak_bytes,row_precision,row_recall
+gateway/aws/gpt-oss-120b,itbench,35.0,IT-G1,large,True,generic,parse_error,False,0,0,3,2820,485,947,6.43,707,0,0,0,0,False,8.2,,,,0,0.0,0,0,0,0,,
+gateway/aws/gpt-oss-120b,itbench,35.0,IT-G1,large,True,sql+silent,answered,False,1,0,3,9301,5666,7438,20.35,702,1,6366,184,17741,False,20.4,,,,0,0.0,0.001,0,0,0,0.0,0.0
+gateway/aws/gpt-oss-120b,itbench,35.0,IT-G1,large,True,sql+labelled,parse_error,False,0,0,3,2820,485,947,0.91,707,0,0,0,0,False,0.9,,,,0,0.0,0,0,0,0,,
+gateway/aws/gpt-oss-120b,itbench,35.0,IT-G2,large,False,generic,answered,False,1,0,2,14242,10402,13309,42.15,707,1,12388,363,34996,False,42.2,,,,0,0.0,0.001,0,0,0,0.0,0.0
+gateway/aws/gpt-oss-120b,itbench,35.0,IT-G2,large,False,sql+silent,answered,False,1,0,2,14227,10512,13299,41.37,702,1,12383,363,34978,False,41.4,,,,0,0.0,0.001,0,0,0,0.0,0.0
+gateway/aws/gpt-oss-120b,itbench,35.0,IT-G2,large,False,sql+labelled,answered,False,1,0,2,14242,10402,13309,0.65,707,1,12388,363,34996,False,0.7,,,,0,0.0,0.001,0,0,0,0.0,0.0
+gateway/aws/gpt-oss-120b,itbench,35.0,IT-G3,large,False,generic,parse_error,False,1,0,4,141974,65123,68538,283.4,707,1,24521,1000,68568,False,283.4,,,,0,0.0,0.008,0,0,0,,
+gateway/aws/gpt-oss-120b,itbench,35.0,IT-G3,large,False,sql+silent,parse_error,False,1,0,4,141951,65109,68532,295.54,702,1,24516,1000,68551,False,295.6,,,,0,0.0,0.007,0,0,0,,
+gateway/aws/gpt-oss-120b,itbench,35.0,IT-G3,large,False,sql+labelled,parse_error,False,2,1,5,78812,1021,25630,11.54,707,1,24552,1000,68681,False,11.6,,,,0,0.0,0.005,0,0,0,,
+gateway/aws/gpt-oss-120b,itbench,35.0,IT-G4,large,False,generic,answered,False,1,0,3,40968,32599,39093,247.62,707,1,38582,1000,106602,False,247.6,,,,0,0.0,0.002,0,0,0,0.0,0.0
+gateway/aws/gpt-oss-120b,itbench,35.0,IT-G4,large,False,sql+silent,answered,False,1,0,2,40005,32398,39076,245.28,702,1,38577,1000,106585,False,245.3,,,,0,0.0,0.002,0,0,0,0.0,0.0
+gateway/aws/gpt-oss-120b,itbench,35.0,IT-G4,large,False,sql+labelled,parse_error,False,2,1,5,81470,913,39237,11.07,707,1,38613,1000,106715,False,11.1,,,,0,0.0,0.004,0,0,0,,
+gateway/aws/gpt-oss-120b,itbench,35.0,IT-G5,large,False,generic,answered,True,1,0,4,6786,2946,3972,10.9,707,1,2807,67,8149,False,10.9,,,,0,0.0,0.001,0,0,0,1.0,1.0
+gateway/aws/gpt-oss-120b,itbench,35.0,IT-G5,large,False,sql+silent,answered,True,1,0,4,6751,3005,3952,14.21,702,1,2802,67,8131,False,14.2,,,,0,0.0,0.001,0,0,0,1.0,1.0
+gateway/aws/gpt-oss-120b,itbench,35.0,IT-G5,large,False,sql+labelled,answered,True,1,0,4,6786,2946,3972,1.97,707,1,2807,67,8149,False,2.0,,,,0,0.0,0.001,0,0,0,1.0,1.0

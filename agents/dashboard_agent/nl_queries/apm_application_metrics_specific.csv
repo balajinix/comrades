@@ -1,0 +1,11 @@
+query
+"Create a time series graph for the call rate received by the application with respect to time."
+"Create a bar graph with the latency of all the services present in our application."
+"Create a pie chart of the distribution of call type (HTTP, DATABASE, etc.) received by our application over time."
+"Create a time series graph of erroneousCalls_per_second over time to identify periods of high error rates."
+"Generate a time series graph to visualize latency_mean and latency_max over time for a specific application to observe latency trends and spikes."
+"Display a bar graph comparing the average calls_per_second for each application_label to identify the most active applications."
+"Plot a scatter plot of calls_per_second vs. latency_mean to identify potential correlations between call volume and latency."
+"Investigate the correlation between latency_max and erroneousCalls_per_second for any given application over time using a dual-axis time series chart."
+"Analyze the distribution of calls_sum across different applications using a bar chart to identify applications with the highest cumulative calls."
+"Analyze the distribution of calls_sum across different applications using a bar chart to identify applications with the highest cumulative calls."

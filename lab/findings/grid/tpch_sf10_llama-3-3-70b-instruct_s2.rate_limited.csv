@@ -1,0 +1,5 @@
+model,schema,sf,qid,family,has_workflow,facade,status,correct,steps,tool_errors,turns,prompt_tokens,completion_tokens,max_prompt_tokens,llm_latency_s,schema_tokens,calls,response_tokens,rows,response_bytes,by_reference,wall_s,delegate_turns,delegate_prompt_tokens,delegate_completion_tokens,seed,temperature,db_time_s,db_mem_peak_bytes,db_temp_table_peak_bytes,db_spill_peak_bytes,row_precision,row_recall
+provider/meta-llama/llama-3-3-70b-instruct,tpch,10.0,F3,filtered_list,False,fine_grained+ops,llm_error,False,0,0,0,0,0,0,0,3479,0,0,0,0,False,1.9,,,,2,0.7,0,0,0,0,,
+provider/meta-llama/llama-3-3-70b-instruct,tpch,10.0,F3,filtered_list,False,handles,llm_error,False,1,0,1,804,62,804,2.43,549,1,181,5,529,False,3.8,,,,2,0.7,0.005,71680,71680,0,,
+provider/meta-llama/llama-3-3-70b-instruct,tpch,10.0,F3,filtered_list,False,skills,llm_error,False,0,0,0,0,0,0,0,231,0,0,0,0,False,1.6,,,,2,0.7,0,0,0,0,,
+provider/meta-llama/llama-3-3-70b-instruct,tpch,10.0,F3,filtered_list,False,code,llm_error,False,1,0,1,678,281,678,5.74,466,1,91,0,285,False,7.9,,,,2,0.7,0.529,0,0,0,,

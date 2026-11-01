@@ -1,0 +1,3 @@
+{"id": "lg-list_infra_node_schemas-1", "family": "infra", "prompt": "What node (entity) types exist in the infrastructure graph?", "gold_tool": "list_infra_node_schemas", "source": "templated-large"}
+{"id": "lg-query_finops_billing_accounts-1", "family": "cost", "prompt": "List the cloud billing accounts.", "gold_tool": "query_finops_billing_accounts", "source": "templated-large"}
+{"id": "lg-list_resilience_applications-1", "family": "resilience", "prompt": "List the applications tracked in Resilience.", "gold_tool": "list_resilience_applications", "source": "templated-large"}

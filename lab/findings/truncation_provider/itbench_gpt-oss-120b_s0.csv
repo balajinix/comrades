@@ -1,0 +1,11 @@
+model,schema,sf,qid,family,has_workflow,facade,status,correct,steps,tool_errors,turns,prompt_tokens,completion_tokens,max_prompt_tokens,llm_latency_s,schema_tokens,calls,response_tokens,rows,response_bytes,by_reference,wall_s,delegate_turns,delegate_prompt_tokens,delegate_completion_tokens,seed,temperature,db_time_s,db_mem_peak_bytes,db_temp_table_peak_bytes,db_spill_peak_bytes,row_precision,row_recall
+provider/openai/gpt-oss-120b,itbench,35.0,IT-G1,large,True,sql+silent,parse_error,False,0,0,3,2838,442,965,5.68,702,0,0,0,0,False,9.7,,,,0,0.0,0,0,0,0,,
+provider/openai/gpt-oss-120b,itbench,35.0,IT-G1,large,True,sql+labelled,parse_error,False,1,0,4,20725,8554,11405,47.91,707,1,6371,184,17759,False,47.9,,,,0,0.0,0.002,0,0,0,,
+provider/openai/gpt-oss-120b,itbench,35.0,IT-G2,large,False,sql+silent,parse_error,False,1,0,4,52383,12366,20936,80.27,702,1,12383,363,34978,False,80.3,,,,0,0.0,0.001,0,0,0,,
+provider/openai/gpt-oss-120b,itbench,35.0,IT-G2,large,False,sql+labelled,parse_error,False,1,0,4,52312,12368,20882,73.45,707,1,12388,363,34996,False,73.5,,,,0,0.0,0.005,0,0,0,,
+provider/openai/gpt-oss-120b,itbench,35.0,IT-G3,large,False,sql+silent,parse_error,False,1,0,4,88907,12413,33123,75.9,702,1,24516,1000,68551,False,75.9,,,,0,0.0,0.005,0,0,0,,
+provider/openai/gpt-oss-120b,itbench,35.0,IT-G3,large,False,sql+labelled,answered,False,5,1,8,298377,4080,94339,56.25,707,4,93018,3792,260139,False,56.3,,,,0,0.0,0.02,0,0,0,1.0,0.0
+provider/openai/gpt-oss-120b,itbench,35.0,IT-G4,large,False,sql+silent,answered,False,1,0,3,83203,8417,42987,55.51,702,1,38577,1000,106585,False,55.6,,,,0,0.0,0.003,0,0,0,0.0,0.0
+provider/openai/gpt-oss-120b,itbench,35.0,IT-G4,large,False,sql+labelled,parse_error,False,2,1,5,85105,8821,42917,69.83,707,1,38613,1000,106715,False,69.9,,,,0,0.0,0.013,0,0,0,,
+provider/openai/gpt-oss-120b,itbench,35.0,IT-G5,large,False,sql+silent,parse_error,False,1,0,4,6745,4624,3925,49.75,702,1,2802,67,8131,False,49.8,,,,0,0.0,0.004,0,0,0,,
+provider/openai/gpt-oss-120b,itbench,35.0,IT-G5,large,False,sql+labelled,parse_error,False,1,0,4,19750,7828,8588,50.79,707,1,2807,67,8149,False,50.8,,,,0,0.0,0.002,0,0,0,,

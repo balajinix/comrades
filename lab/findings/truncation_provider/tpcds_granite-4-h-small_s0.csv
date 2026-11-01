@@ -1,0 +1,11 @@
+model,schema,sf,qid,family,has_workflow,facade,status,correct,steps,tool_errors,turns,prompt_tokens,completion_tokens,max_prompt_tokens,llm_latency_s,schema_tokens,calls,response_tokens,rows,response_bytes,by_reference,wall_s,delegate_turns,delegate_prompt_tokens,delegate_completion_tokens,seed,temperature,db_time_s,db_mem_peak_bytes,db_temp_table_peak_bytes,db_spill_peak_bytes,row_precision,row_recall
+provider/ibm/granite-4-h-small,tpcds,1.0,DS-G1,large_list,False,sql+silent,parse_error,False,1,0,4,107683,12401,38937,242.55,3038,1,27375,1000,83858,False,248.8,,,,0,0.0,0.014,0,0,0,,
+provider/ibm/granite-4-h-small,tpcds,1.0,DS-G1,large_list,False,sql+labelled,parse_error,False,1,0,4,107790,12400,38971,213.17,3043,1,27405,1000,84126,False,213.2,,,,0,0.0,0.037,0,0,0,,
+provider/ibm/granite-4-h-small,tpcds,1.0,DS-G2,large_list,False,sql+silent,answered,True,1,0,2,8853,1420,5660,25.76,3038,1,2374,113,8097,False,25.8,,,,0,0.0,0.01,0,0,0,1.0,1.0
+provider/ibm/granite-4-h-small,tpcds,1.0,DS-G2,large_list,False,sql+labelled,answered,True,1,0,2,8868,1420,5670,28.59,3043,1,2379,113,8115,False,28.6,,,,0,0.0,0.003,0,0,0,1.0,1.0
+provider/ibm/granite-4-h-small,tpcds,1.0,DS-G3,large_list,False,sql+silent,answered,False,1,0,4,95828,8322,34988,285.67,3038,1,23438,911,79069,False,285.7,,,,0,0.0,0.004,0,0,0,0.0,0.0
+provider/ibm/granite-4-h-small,tpcds,1.0,DS-G3,large_list,False,sql+labelled,answered,False,1,0,3,60799,4193,30852,78.16,3043,1,23443,911,79087,False,78.2,,,,0,0.0,0.005,0,0,0,0.0,0.0
+provider/ibm/granite-4-h-small,tpcds,1.0,DS-G4,large_list,False,sql+silent,parse_error,False,1,0,4,52496,12375,20541,230.96,3038,1,9004,429,28986,False,231.0,,,,0,0.0,0.005,0,0,0,,
+provider/ibm/granite-4-h-small,tpcds,1.0,DS-G4,large_list,False,sql+labelled,parse_error,False,1,0,4,52615,12403,20579,154.07,3043,1,9009,429,29004,False,154.1,,,,0,0.0,0.006,0,0,0,,
+provider/ibm/granite-4-h-small,tpcds,1.0,DS-G5,large_list,False,sql+silent,parse_error,False,1,0,4,55120,12382,21417,157.34,3038,1,9877,521,31909,False,157.4,,,,0,0.0,0.013,0,0,0,,
+provider/ibm/granite-4-h-small,tpcds,1.0,DS-G5,large_list,False,sql+labelled,parse_error,False,1,0,4,55155,12382,21427,164.81,3043,1,9882,521,31927,False,164.8,,,,0,0.0,0.011,0,0,0,,

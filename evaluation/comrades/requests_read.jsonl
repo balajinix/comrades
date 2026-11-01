@@ -1,0 +1,102 @@
+{"id": "tr-query_finops_cost_report-1", "family": "cost", "prompt": "What are the top cloud costs this month?", "gold_tool": "query_finops_cost_report", "source": "templated-read"}
+{"id": "tr-query_finops_cost_report-2", "family": "cost", "prompt": "Using the available data tools, what are the top cloud costs this month?", "gold_tool": "query_finops_cost_report", "source": "templated-read"}
+{"id": "tr-query_finops_rightsizing-1", "family": "cost", "prompt": "Show the AWS EC2 rightsizing recommendations.", "gold_tool": "query_finops_rightsizing", "source": "templated-read"}
+{"id": "tr-query_finops_rightsizing-2", "family": "cost", "prompt": "Using the available data tools, show the AWS EC2 rightsizing recommendations.", "gold_tool": "query_finops_rightsizing", "source": "templated-read"}
+{"id": "tr-query_finops_anomalies-1", "family": "cost", "prompt": "Are there any cloud cost anomalies in the last 7 days?", "gold_tool": "query_finops_anomalies", "source": "templated-read"}
+{"id": "tr-query_finops_anomalies-2", "family": "cost", "prompt": "Using the available data tools, are there any cloud cost anomalies in the last 7 days?", "gold_tool": "query_finops_anomalies", "source": "templated-read"}
+{"id": "tr-query_finops_billing_accounts-1", "family": "cost", "prompt": "List the cloud billing accounts.", "gold_tool": "query_finops_billing_accounts", "source": "templated-read"}
+{"id": "tr-query_finops_billing_accounts-2", "family": "cost", "prompt": "Using the available data tools, list the cloud billing accounts.", "gold_tool": "query_finops_billing_accounts", "source": "templated-read"}
+{"id": "tr-get_application_topology-1", "family": "apm", "prompt": "Show the APM service topology for our applications.", "gold_tool": "get_application_topology", "source": "templated-read"}
+{"id": "tr-get_application_topology-2", "family": "apm", "prompt": "Using the available data tools, show the APM service topology for our applications.", "gold_tool": "get_application_topology", "source": "templated-read"}
+{"id": "tr-get_related_hosts-1", "family": "apm", "prompt": "Which hosts are related to this APM snapshot?", "gold_tool": "get_related_hosts", "source": "templated-read"}
+{"id": "tr-get_related_hosts-2", "family": "apm", "prompt": "Using the available data tools, which hosts are related to this APM snapshot?", "gold_tool": "get_related_hosts", "source": "templated-read"}
+{"id": "tr-get_topology-1", "family": "apm", "prompt": "Show the infrastructure topology from APM.", "gold_tool": "get_topology", "source": "templated-read"}
+{"id": "tr-get_topology-2", "family": "apm", "prompt": "Using the available data tools, show the infrastructure topology from APM.", "gold_tool": "get_topology", "source": "templated-read"}
+{"id": "tr-manage_applications-1", "family": "apm", "prompt": "List the APM application perspectives.", "gold_tool": "manage_applications", "source": "templated-read"}
+{"id": "tr-manage_applications-2", "family": "apm", "prompt": "Using the available data tools, list the APM application perspectives.", "gold_tool": "manage_applications", "source": "templated-read"}
+{"id": "tr-manage_automation-1", "family": "apm", "prompt": "List the available APM automation actions.", "gold_tool": "manage_automation", "source": "templated-read"}
+{"id": "tr-manage_automation-2", "family": "apm", "prompt": "Using the available data tools, list the available APM automation actions.", "gold_tool": "manage_automation", "source": "templated-read"}
+{"id": "tr-manage_custom_dashboards-1", "family": "apm", "prompt": "List the APM custom dashboards.", "gold_tool": "manage_custom_dashboards", "source": "templated-read"}
+{"id": "tr-manage_custom_dashboards-2", "family": "apm", "prompt": "Using the available data tools, list the APM custom dashboards.", "gold_tool": "manage_custom_dashboards", "source": "templated-read"}
+{"id": "tr-manage_events-1", "family": "apm", "prompt": "Show the recent APM events.", "gold_tool": "manage_events", "source": "templated-read"}
+{"id": "tr-manage_events-2", "family": "apm", "prompt": "Using the available data tools, show the recent APM events.", "gold_tool": "manage_events", "source": "templated-read"}
+{"id": "tr-manage_mobile_apps-1", "family": "apm", "prompt": "List the monitored APM mobile apps.", "gold_tool": "manage_mobile_apps", "source": "templated-read"}
+{"id": "tr-manage_mobile_apps-2", "family": "apm", "prompt": "Using the available data tools, list the monitored APM mobile apps.", "gold_tool": "manage_mobile_apps", "source": "templated-read"}
+{"id": "tr-manage_releases-1", "family": "apm", "prompt": "List the tracked releases and their deployment status.", "gold_tool": "manage_releases", "source": "templated-read"}
+{"id": "tr-manage_releases-2", "family": "apm", "prompt": "Using the available data tools, list the tracked releases and their deployment status.", "gold_tool": "manage_releases", "source": "templated-read"}
+{"id": "tr-manage_slo-1", "family": "apm", "prompt": "Show the configured SLOs and their current status.", "gold_tool": "manage_slo", "source": "templated-read"}
+{"id": "tr-manage_slo-2", "family": "apm", "prompt": "Using the available data tools, show the configured SLOs and their current status.", "gold_tool": "manage_slo", "source": "templated-read"}
+{"id": "tr-manage_websites-1", "family": "apm", "prompt": "List the monitored APM websites.", "gold_tool": "manage_websites", "source": "templated-read"}
+{"id": "tr-manage_websites-2", "family": "apm", "prompt": "Using the available data tools, list the monitored APM websites.", "gold_tool": "manage_websites", "source": "templated-read"}
+{"id": "tr-list_incidents-1", "family": "itsm", "prompt": "List the recent ITSM incidents.", "gold_tool": "list_incidents", "source": "templated-read"}
+{"id": "tr-list_incidents-2", "family": "itsm", "prompt": "Using the available data tools, list the recent ITSM incidents.", "gold_tool": "list_incidents", "source": "templated-read"}
+{"id": "tr-get_incident_by_number-1", "family": "itsm", "prompt": "Show the details of ITSM incident INC0010001.", "gold_tool": "get_incident_by_number", "source": "templated-read"}
+{"id": "tr-get_incident_by_number-2", "family": "itsm", "prompt": "Using the available data tools, show the details of ITSM incident INC0010001.", "gold_tool": "get_incident_by_number", "source": "templated-read"}
+{"id": "tr-get_latest_incident-1", "family": "itsm", "prompt": "What is the most recent ITSM incident?", "gold_tool": "get_latest_incident", "source": "templated-read"}
+{"id": "tr-get_latest_incident-2", "family": "itsm", "prompt": "Using the available data tools, what is the most recent ITSM incident?", "gold_tool": "get_latest_incident", "source": "templated-read"}
+{"id": "tr-list_catalog_items-1", "family": "itsm", "prompt": "List the ITSM service catalog items.", "gold_tool": "list_catalog_items", "source": "templated-read"}
+{"id": "tr-list_catalog_items-2", "family": "itsm", "prompt": "Using the available data tools, list the ITSM service catalog items.", "gold_tool": "list_catalog_items", "source": "templated-read"}
+{"id": "tr-get_catalog_item-1", "family": "itsm", "prompt": "Show the details of a specific service catalog item.", "gold_tool": "get_catalog_item", "source": "templated-read"}
+{"id": "tr-get_catalog_item-2", "family": "itsm", "prompt": "Using the available data tools, show the details of a specific service catalog item.", "gold_tool": "get_catalog_item", "source": "templated-read"}
+{"id": "tr-list_catalog_categories-1", "family": "itsm", "prompt": "List the service catalog categories.", "gold_tool": "list_catalog_categories", "source": "templated-read"}
+{"id": "tr-list_catalog_categories-2", "family": "itsm", "prompt": "Using the available data tools, list the service catalog categories.", "gold_tool": "list_catalog_categories", "source": "templated-read"}
+{"id": "tr-list_catalog_item_variables-1", "family": "itsm", "prompt": "List the variables for a service catalog item.", "gold_tool": "list_catalog_item_variables", "source": "templated-read"}
+{"id": "tr-list_catalog_item_variables-2", "family": "itsm", "prompt": "Using the available data tools, list the variables for a service catalog item.", "gold_tool": "list_catalog_item_variables", "source": "templated-read"}
+{"id": "tr-list_change_requests-1", "family": "itsm", "prompt": "List the open ITSM change requests.", "gold_tool": "list_change_requests", "source": "templated-read"}
+{"id": "tr-list_change_requests-2", "family": "itsm", "prompt": "Using the available data tools, list the open ITSM change requests.", "gold_tool": "list_change_requests", "source": "templated-read"}
+{"id": "tr-get_change_request_details-1", "family": "itsm", "prompt": "Show the details of change request CHG0030001.", "gold_tool": "get_change_request_details", "source": "templated-read"}
+{"id": "tr-get_change_request_details-2", "family": "itsm", "prompt": "Using the available data tools, show the details of change request CHG0030001.", "gold_tool": "get_change_request_details", "source": "templated-read"}
+{"id": "tr-list_workflows-1", "family": "itsm", "prompt": "List the ITSM workflows.", "gold_tool": "list_workflows", "source": "templated-read"}
+{"id": "tr-list_workflows-2", "family": "itsm", "prompt": "Using the available data tools, list the ITSM workflows.", "gold_tool": "list_workflows", "source": "templated-read"}
+{"id": "tr-get_workflow_details-1", "family": "itsm", "prompt": "Show the details of a specific ITSM workflow.", "gold_tool": "get_workflow_details", "source": "templated-read"}
+{"id": "tr-get_workflow_details-2", "family": "itsm", "prompt": "Using the available data tools, show the details of a specific ITSM workflow.", "gold_tool": "get_workflow_details", "source": "templated-read"}
+{"id": "tr-list_workflow_versions-1", "family": "itsm", "prompt": "List the versions of a ITSM workflow.", "gold_tool": "list_workflow_versions", "source": "templated-read"}
+{"id": "tr-list_workflow_versions-2", "family": "itsm", "prompt": "Using the available data tools, list the versions of a ITSM workflow.", "gold_tool": "list_workflow_versions", "source": "templated-read"}
+{"id": "tr-get_workflow_activities-1", "family": "itsm", "prompt": "Show the activities for a ITSM workflow.", "gold_tool": "get_workflow_activities", "source": "templated-read"}
+{"id": "tr-get_workflow_activities-2", "family": "itsm", "prompt": "Using the available data tools, show the activities for a ITSM workflow.", "gold_tool": "get_workflow_activities", "source": "templated-read"}
+{"id": "tr-list_changesets-1", "family": "itsm", "prompt": "List the ITSM changesets.", "gold_tool": "list_changesets", "source": "templated-read"}
+{"id": "tr-list_changesets-2", "family": "itsm", "prompt": "Using the available data tools, list the ITSM changesets.", "gold_tool": "list_changesets", "source": "templated-read"}
+{"id": "tr-get_changeset_details-1", "family": "itsm", "prompt": "Show the details of a specific ITSM changeset.", "gold_tool": "get_changeset_details", "source": "templated-read"}
+{"id": "tr-get_changeset_details-2", "family": "itsm", "prompt": "Using the available data tools, show the details of a specific ITSM changeset.", "gold_tool": "get_changeset_details", "source": "templated-read"}
+{"id": "tr-list_script_includes-1", "family": "itsm", "prompt": "List the ITSM script includes.", "gold_tool": "list_script_includes", "source": "templated-read"}
+{"id": "tr-list_script_includes-2", "family": "itsm", "prompt": "Using the available data tools, list the ITSM script includes.", "gold_tool": "list_script_includes", "source": "templated-read"}
+{"id": "tr-get_script_include-1", "family": "itsm", "prompt": "Show a specific ITSM script include.", "gold_tool": "get_script_include", "source": "templated-read"}
+{"id": "tr-get_script_include-2", "family": "itsm", "prompt": "Using the available data tools, show a specific ITSM script include.", "gold_tool": "get_script_include", "source": "templated-read"}
+{"id": "tr-list_knowledge_bases-1", "family": "itsm", "prompt": "List the ITSM knowledge bases.", "gold_tool": "list_knowledge_bases", "source": "templated-read"}
+{"id": "tr-list_knowledge_bases-2", "family": "itsm", "prompt": "Using the available data tools, list the ITSM knowledge bases.", "gold_tool": "list_knowledge_bases", "source": "templated-read"}
+{"id": "tr-list_categories-1", "family": "itsm", "prompt": "List the categories in a ITSM knowledge base.", "gold_tool": "list_categories", "source": "templated-read"}
+{"id": "tr-list_categories-2", "family": "itsm", "prompt": "Using the available data tools, list the categories in a ITSM knowledge base.", "gold_tool": "list_categories", "source": "templated-read"}
+{"id": "tr-list_articles-1", "family": "itsm", "prompt": "List the ITSM knowledge articles.", "gold_tool": "list_articles", "source": "templated-read"}
+{"id": "tr-list_articles-2", "family": "itsm", "prompt": "Using the available data tools, list the ITSM knowledge articles.", "gold_tool": "list_articles", "source": "templated-read"}
+{"id": "tr-get_article-1", "family": "itsm", "prompt": "Show a specific ITSM knowledge article.", "gold_tool": "get_article", "source": "templated-read"}
+{"id": "tr-get_article-2", "family": "itsm", "prompt": "Using the available data tools, show a specific ITSM knowledge article.", "gold_tool": "get_article", "source": "templated-read"}
+{"id": "tr-get_user-1", "family": "itsm", "prompt": "Show the details of a specific ITSM user.", "gold_tool": "get_user", "source": "templated-read"}
+{"id": "tr-get_user-2", "family": "itsm", "prompt": "Using the available data tools, show the details of a specific ITSM user.", "gold_tool": "get_user", "source": "templated-read"}
+{"id": "tr-list_users-1", "family": "itsm", "prompt": "List the ITSM users.", "gold_tool": "list_users", "source": "templated-read"}
+{"id": "tr-list_users-2", "family": "itsm", "prompt": "Using the available data tools, list the ITSM users.", "gold_tool": "list_users", "source": "templated-read"}
+{"id": "tr-list_groups-1", "family": "itsm", "prompt": "List the ITSM groups.", "gold_tool": "list_groups", "source": "templated-read"}
+{"id": "tr-list_groups-2", "family": "itsm", "prompt": "Using the available data tools, list the ITSM groups.", "gold_tool": "list_groups", "source": "templated-read"}
+{"id": "tr-list_stories-1", "family": "itsm", "prompt": "List the ITSM agile stories.", "gold_tool": "list_stories", "source": "templated-read"}
+{"id": "tr-list_stories-2", "family": "itsm", "prompt": "Using the available data tools, list the ITSM agile stories.", "gold_tool": "list_stories", "source": "templated-read"}
+{"id": "tr-list_story_dependencies-1", "family": "itsm", "prompt": "List the dependencies between ITSM stories.", "gold_tool": "list_story_dependencies", "source": "templated-read"}
+{"id": "tr-list_story_dependencies-2", "family": "itsm", "prompt": "Using the available data tools, list the dependencies between ITSM stories.", "gold_tool": "list_story_dependencies", "source": "templated-read"}
+{"id": "tr-list_epics-1", "family": "itsm", "prompt": "List the ITSM epics.", "gold_tool": "list_epics", "source": "templated-read"}
+{"id": "tr-list_epics-2", "family": "itsm", "prompt": "Using the available data tools, list the ITSM epics.", "gold_tool": "list_epics", "source": "templated-read"}
+{"id": "tr-list_scrum_tasks-1", "family": "itsm", "prompt": "List the ITSM scrum tasks.", "gold_tool": "list_scrum_tasks", "source": "templated-read"}
+{"id": "tr-list_scrum_tasks-2", "family": "itsm", "prompt": "Using the available data tools, list the ITSM scrum tasks.", "gold_tool": "list_scrum_tasks", "source": "templated-read"}
+{"id": "tr-list_projects-1", "family": "itsm", "prompt": "List the ITSM projects.", "gold_tool": "list_projects", "source": "templated-read"}
+{"id": "tr-list_projects-2", "family": "itsm", "prompt": "Using the available data tools, list the ITSM projects.", "gold_tool": "list_projects", "source": "templated-read"}
+{"id": "tr-analyze_infrastructure-1", "family": "infra", "prompt": "Analyze our infrastructure and summarize the key findings.", "gold_tool": "analyze_infrastructure", "source": "templated-read"}
+{"id": "tr-analyze_infrastructure-2", "family": "infra", "prompt": "Using the available data tools, analyze our infrastructure and summarize the key findings.", "gold_tool": "analyze_infrastructure", "source": "templated-read"}
+{"id": "tr-get_optimization_recommendations-1", "family": "infra", "prompt": "What optimization recommendations are there for the service catalog?", "gold_tool": "get_optimization_recommendations", "source": "templated-read"}
+{"id": "tr-get_optimization_recommendations-2", "family": "infra", "prompt": "Using the available data tools, what optimization recommendations are there for the service catalog?", "gold_tool": "get_optimization_recommendations", "source": "templated-read"}
+{"id": "tr-query_infra_nl2iql-1", "family": "infra", "prompt": "Generate an IQL query to list all AWS EC2 instances.", "gold_tool": "query_infra_nl2iql", "source": "templated-read"}
+{"id": "tr-query_infra_nl2iql-2", "family": "infra", "prompt": "Using the available data tools, generate an IQL query to list all AWS EC2 instances.", "gold_tool": "query_infra_nl2iql", "source": "templated-read"}
+{"id": "tr-query_resilience-1", "family": "resilience", "prompt": "Show the Resilience resilience and compliance overview for our applications.", "gold_tool": "query_resilience", "source": "templated-read"}
+{"id": "tr-query_resilience-2", "family": "resilience", "prompt": "Using the available data tools, show the Resilience resilience and compliance overview for our applications.", "gold_tool": "query_resilience", "source": "templated-read"}
+{"id": "tr-query_resilience_resilience-1", "family": "resilience", "prompt": "List the Resilience resilience assessments.", "gold_tool": "query_resilience_resilience", "source": "templated-read"}
+{"id": "tr-query_resilience_resilience-2", "family": "resilience", "prompt": "Using the available data tools, list the Resilience resilience assessments.", "gold_tool": "query_resilience_resilience", "source": "templated-read"}
+{"id": "tr-query_resilience_security-1", "family": "resilience", "prompt": "Show the Resilience security risk analysis.", "gold_tool": "query_resilience_security", "source": "templated-read"}
+{"id": "tr-query_resilience_security-2", "family": "resilience", "prompt": "Using the available data tools, show the Resilience security risk analysis.", "gold_tool": "query_resilience_security", "source": "templated-read"}
+{"id": "tr-query_resilience_workflow_status-1", "family": "resilience", "prompt": "What is the status of a Resilience workflow execution?", "gold_tool": "query_resilience_workflow_status", "source": "templated-read"}
+{"id": "tr-query_resilience_workflow_status-2", "family": "resilience", "prompt": "Using the available data tools, what is the status of a Resilience workflow execution?", "gold_tool": "query_resilience_workflow_status", "source": "templated-read"}

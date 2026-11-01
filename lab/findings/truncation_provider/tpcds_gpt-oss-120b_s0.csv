@@ -1,0 +1,11 @@
+model,schema,sf,qid,family,has_workflow,facade,status,correct,steps,tool_errors,turns,prompt_tokens,completion_tokens,max_prompt_tokens,llm_latency_s,schema_tokens,calls,response_tokens,rows,response_bytes,by_reference,wall_s,delegate_turns,delegate_prompt_tokens,delegate_completion_tokens,seed,temperature,db_time_s,db_mem_peak_bytes,db_temp_table_peak_bytes,db_spill_peak_bytes,row_precision,row_recall
+provider/openai/gpt-oss-120b,tpcds,1.0,DS-G1,large_list,False,sql+silent,parse_error,False,0,0,3,9918,662,3317,7.49,3038,0,0,0,0,False,13.5,,,,0,0.0,0,0,0,0,,
+provider/openai/gpt-oss-120b,tpcds,1.0,DS-G1,large_list,False,sql+labelled,parse_error,False,0,0,3,9933,623,3322,8.66,3043,0,0,0,0,False,8.7,,,,0,0.0,0,0,0,0,,
+provider/openai/gpt-oss-120b,tpcds,1.0,DS-G2,large_list,False,sql+silent,answered,True,1,0,3,12530,3247,5965,17.77,3038,1,2374,113,8097,False,17.8,,,,0,0.0,0.003,0,0,0,1.0,1.0
+provider/openai/gpt-oss-120b,tpcds,1.0,DS-G2,large_list,False,sql+labelled,answered,True,1,0,4,15714,2028,5835,16.55,3043,1,2379,113,8115,False,16.6,,,,0,0.0,0.002,0,0,0,1.0,1.0
+provider/openai/gpt-oss-120b,tpcds,1.0,DS-G3,large_list,False,sql+silent,parse_error,False,0,0,3,9894,503,3309,6.28,3038,0,0,0,0,False,6.3,,,,0,0.0,0,0,0,0,,
+provider/openai/gpt-oss-120b,tpcds,1.0,DS-G3,large_list,False,sql+labelled,parse_error,False,0,0,3,9909,551,3314,6.79,3043,0,0,0,0,False,6.8,,,,0,0.0,0,0,0,0,,
+provider/openai/gpt-oss-120b,tpcds,1.0,DS-G4,large_list,False,sql+silent,parse_error,False,0,0,3,9921,751,3318,7.93,3038,0,0,0,0,False,7.9,,,,0,0.0,0,0,0,0,,
+provider/openai/gpt-oss-120b,tpcds,1.0,DS-G4,large_list,False,sql+labelled,parse_error,False,0,0,3,9936,684,3323,7.2,3043,0,0,0,0,False,7.2,,,,0,0.0,0,0,0,0,,
+provider/openai/gpt-oss-120b,tpcds,1.0,DS-G5,large_list,False,sql+silent,parse_error,False,0,0,3,9909,453,3314,5.79,3038,0,0,0,0,False,5.8,,,,0,0.0,0,0,0,0,,
+provider/openai/gpt-oss-120b,tpcds,1.0,DS-G5,large_list,False,sql+labelled,parse_error,False,0,0,3,9924,575,3319,8.55,3043,0,0,0,0,False,8.6,,,,0,0.0,0,0,0,0,,

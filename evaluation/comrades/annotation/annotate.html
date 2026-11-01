@@ -1,0 +1,239 @@
+<!doctype html>
+<!-- Copyright (c) 2024 COMRADES Authors / SPDX-License-Identifier: MIT -->
+<!--
+  COMRADES annotation tool — a single static page (no server, no build).
+  Open it in a browser, load a candidates .jsonl, verify each row (edit gold +
+  assertion, accept/reject), and export a gold .jsonl. Progress autosaves to the
+  browser's localStorage so refreshing or closing the tab does not lose work.
+
+  Workflow:
+    1. python gen_candidates.py            -> candidates/dataset_A.jsonl
+    2. open annotate.html, "Load candidates", pick that file
+    3. annotate (keyboard: a=accept  r=reject  s=skip  j/k=next/prev)
+    4. "Export gold" -> dataset_A.gold.jsonl  (accepted rows only, verified=true)
+       "Export progress" -> full set incl. status, to resume later / hand off
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>COMRADES annotation</title>
+<style>
+  :root { --bg:#0f1419; --panel:#1a2129; --ink:#e6edf3; --muted:#8b98a5;
+          --acc:#3fb950; --rej:#f85149; --skip:#d29922; --line:#2d3640; --blue:#58a6ff; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;
+         background:var(--bg); color:var(--ink); }
+  header { position:sticky; top:0; background:var(--panel); border-bottom:1px solid var(--line);
+           padding:10px 16px; display:flex; gap:14px; align-items:center; flex-wrap:wrap; z-index:5; }
+  header h1 { font-size:15px; margin:0 12px 0 0; font-weight:600; }
+  .stat { color:var(--muted); font-size:12px; }
+  .stat b { color:var(--ink); }
+  .bar { height:6px; background:var(--line); border-radius:3px; flex:1; min-width:120px; overflow:hidden; }
+  .bar > span { display:block; height:100%; background:var(--acc); width:0; }
+  button { background:#21303d; color:var(--ink); border:1px solid var(--line); border-radius:6px;
+           padding:6px 12px; cursor:pointer; font-size:13px; }
+  button:hover { border-color:var(--blue); }
+  button.acc { background:#15321d; border-color:var(--acc); }
+  button.rej { background:#3a1a1a; border-color:var(--rej); }
+  label.file { background:#21303d; border:1px solid var(--line); border-radius:6px; padding:6px 12px; cursor:pointer; }
+  label.file input { display:none; }
+  main { max-width:920px; margin:18px auto; padding:0 16px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px; }
+  .row-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .pill { font-size:11px; padding:2px 8px; border-radius:10px; border:1px solid var(--line); color:var(--muted); }
+  .pill.acc { color:var(--acc); border-color:var(--acc); }
+  .pill.rej { color:var(--rej); border-color:var(--rej); }
+  .pill.skip { color:var(--skip); border-color:var(--skip); }
+  .fld { margin:10px 0; }
+  .fld label { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-bottom:4px; }
+  .fld input, .fld textarea, .fld select { width:100%; background:#0d1117; color:var(--ink);
+           border:1px solid var(--line); border-radius:6px; padding:8px; font:13px/1.45 ui-monospace,Menlo,monospace; }
+  .fld textarea { resize:vertical; }
+  .fld.prompt textarea { font-size:15px; font-family:inherit; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .actions { display:flex; gap:10px; margin-top:16px; align-items:center; }
+  .actions .spacer { flex:1; }
+  .hint { color:var(--muted); font-size:12px; }
+  .err { color:var(--rej); font-size:12px; min-height:16px; }
+  .empty { text-align:center; color:var(--muted); padding:60px 0; }
+  kbd { background:#0d1117; border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-size:11px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>COMRADES annotation</h1>
+  <label class="file">Load candidates<input id="file" type="file" accept=".jsonl,.json,.txt"/></label>
+  <span class="stat" id="ds"></span>
+  <div class="bar"><span id="prog"></span></div>
+  <span class="stat" id="counts"></span>
+  <span class="spacer" style="flex:1"></span>
+  <button id="exportGold">Export gold</button>
+  <button id="exportAll">Export progress</button>
+</header>
+<main>
+  <div id="view" class="empty">
+    Load a <code>.jsonl</code> of candidates to begin.<br/>
+    Shortcuts: <kbd>a</kbd> accept · <kbd>r</kbd> reject · <kbd>s</kbd> skip · <kbd>j</kbd>/<kbd>k</kbd> next/prev.
+    Work autosaves in this browser.
+  </div>
+</main>
+<script>
+const ANNOTATOR = (localStorage.getItem("comrades.annotator")
+    || prompt("Annotator name/initials (stored locally for provenance):", "anon") || "anon").trim();
+localStorage.setItem("comrades.annotator", ANNOTATOR);
+
+// Always-available annotation fields layered on top of whatever the row carries.
+const META_FIELDS = ["family","difficulty","hops","reasoning_type"];
+const GOLD_HINTS = { // longer editors for these
+  prompt:"prompt", result_assertion:"ta", completion_criterion:"ta",
+  gold_args:"json", gold_tools:"json", gold_tool:"input", mapping:"json", notes:"ta",
+};
+let rows = [], i = 0, dsName = "dataset";
+
+const $ = s => document.querySelector(s);
+const keyOf = r => `comrades.ann.${dsName}.${r.__id}`;
+
+function load(text, name){
+  dsName = name.replace(/\.(jsonl|json|txt)$/,"");
+  rows = text.split(/\r?\n/).filter(l=>l.trim()).map((l,idx)=>{
+    let o; try{ o=JSON.parse(l);}catch(e){ o={__parse_error:l}; }
+    o.__id = o.id || `row-${idx}`;
+    return o;
+  });
+  // restore any saved status/edits from localStorage
+  rows.forEach(r=>{ const s=localStorage.getItem(keyOf(r)); if(s){ Object.assign(r, JSON.parse(s)); } });
+  i = rows.findIndex(r=>!r.__status); if(i<0) i=0;
+  render();
+}
+
+function save(r){ localStorage.setItem(keyOf(r), JSON.stringify(
+  Object.fromEntries(Object.entries(r).filter(([k])=>k!=="__id")))); }
+
+function setStatus(st){
+  const r=rows[i]; if(!r) return;
+  r.__status=st; r.__annotator=ANNOTATOR; r.__ts=new Date().toISOString().slice(0,19)+"Z";
+  save(r);
+  if(st!=="skip"){ // advance to next unannotated
+    let n=rows.findIndex((x,idx)=>idx>i && !x.__status);
+    i = n>=0 ? n : Math.min(i+1, rows.length-1);
+  } else { i=Math.min(i+1, rows.length-1); }
+  render();
+}
+
+function fieldEditor(k, v){
+  const kind = GOLD_HINTS[k] || (typeof v==="object" ? "json" : (String(v).length>60?"ta":"input"));
+  const val = kind==="json" ? JSON.stringify(v??(k.endsWith("s")?[]:{}), null, 1) : (v??"");
+  const id = `f_${k}`;
+  if(k==="family"){
+    const opts=["cost","apm","itsm","resilience","infra","other"];
+    return `<div class="fld"><label>${k}</label><select id="${id}" data-k="${k}">`+
+      opts.map(o=>`<option ${o===v?"selected":""}>${o}</option>`).join("")+`</select></div>`;
+  }
+  if(kind==="ta"||kind==="json"||kind==="prompt"){
+    const cls = k==="prompt" ? "fld prompt":"fld";
+    return `<div class="${cls}"><label>${k}${kind==="json"?" (JSON)":""}</label>`+
+      `<textarea id="${id}" data-k="${k}" data-json="${kind==="json"}" rows="${k==="prompt"?2:3}">`+
+      `${escapeHtml(val)}</textarea></div>`;
+  }
+  return `<div class="fld"><label>${k}</label><input id="${id}" data-k="${k}" value="${escapeAttr(val)}"/></div>`;
+}
+const escapeHtml = s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const escapeAttr = s=>String(s).replace(/"/g,"&quot;");
+
+function render(){
+  const acc=rows.filter(r=>r.__status==="accept").length;
+  const rej=rows.filter(r=>r.__status==="reject").length;
+  const skp=rows.filter(r=>r.__status==="skip").length;
+  const done=rows.filter(r=>r.__status).length;
+  $("#ds").innerHTML = rows.length?`<b>${dsName}</b> · ${rows.length} rows · annotator <b>${ANNOTATOR}</b>`:"";
+  $("#counts").innerHTML = rows.length?`<b style="color:var(--acc)">${acc}</b> acc · `+
+     `<b style="color:var(--rej)">${rej}</b> rej · <b style="color:var(--skip)">${skp}</b> skip · ${rows.length-done} left`:"";
+  $("#prog").style.width = rows.length?`${100*done/rows.length}%`:"0";
+  if(!rows.length){ return; }
+  const r=rows[i];
+  const ordered = ["prompt", ...Object.keys(r).filter(k=>k==="gold_tool"||k==="gold_tools"||k==="gold_args"||k==="result_assertion"||k==="completion_criterion"||k==="mapping"),
+                   ...META_FIELDS, "notes",
+                   ...Object.keys(r).filter(k=>!k.startsWith("__")&&!["prompt","gold_tool","gold_tools","gold_args","result_assertion","completion_criterion","mapping","notes",...META_FIELDS].includes(k))];
+  const seen=new Set(); const fields=ordered.filter(k=>!seen.has(k)&&(seen.add(k),true));
+  if(!("notes" in r)) r.notes="";
+  META_FIELDS.forEach(m=>{ if(!(m in r)) r[m]= m==="hops"?1:""; });
+  const stPill = r.__status?`<span class="pill ${r.__status}">${r.__status}</span>`:`<span class="pill">pending</span>`;
+  $("#view").innerHTML = `
+    <div class="card">
+      <div class="row-head">
+        <span class="pill">${i+1} / ${rows.length}</span>
+        <span class="pill">id: ${escapeHtml(r.__id)}</span>
+        <span class="pill">${escapeHtml(r.source||"?")}</span>
+        ${stPill}
+      </div>
+      ${fields.map(k=>fieldEditor(k, r[k])).join("")}
+      <div class="err" id="err"></div>
+      <div class="actions">
+        <button class="acc" id="bAcc">✓ Accept &amp; next <kbd>a</kbd></button>
+        <button class="rej" id="bRej">✗ Reject <kbd>r</kbd></button>
+        <button id="bSkip">Skip <kbd>s</kbd></button>
+        <span class="spacer"></span>
+        <button id="bPrev"><kbd>k</kbd> prev</button>
+        <button id="bNext">next <kbd>j</kbd></button>
+      </div>
+      <p class="hint">Edits save as you type. Accept = include in gold export.</p>
+    </div>`;
+  // wire field edits
+  $("#view").querySelectorAll("[data-k]").forEach(el=>{
+    el.addEventListener("input", ()=>commitField(el));
+    el.addEventListener("change", ()=>commitField(el));
+  });
+  $("#bAcc").onclick=()=>{ if(commitAll()) setStatus("accept"); };
+  $("#bRej").onclick=()=>setStatus("reject");
+  $("#bSkip").onclick=()=>setStatus("skip");
+  $("#bPrev").onclick=()=>{ i=Math.max(0,i-1); render(); };
+  $("#bNext").onclick=()=>{ i=Math.min(rows.length-1,i+1); render(); };
+}
+
+function commitField(el){
+  const r=rows[i], k=el.dataset.k;
+  if(el.dataset.json==="true"){
+    try{ r[k]=JSON.parse(el.value); $("#err").textContent=""; }
+    catch(e){ $("#err").textContent=`Invalid JSON in ${k}: ${e.message}`; return; }
+  } else { r[k]=el.value; }
+  save(r);
+}
+function commitAll(){
+  let ok=true;
+  $("#view").querySelectorAll("[data-k][data-json='true']").forEach(el=>{
+    try{ JSON.parse(el.value); }catch(e){ $("#err").textContent=`Fix JSON in ${el.dataset.k} before accepting.`; ok=false; }
+  });
+  return ok;
+}
+
+function download(name, text){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([text],{type:"application/jsonl"}));
+  a.download=name; a.click(); URL.revokeObjectURL(a.href);
+}
+function clean(r){ // strip internal __id but keep status fields the caller asked for
+  const o={}; for(const [k,v] of Object.entries(r)) if(k!=="__id") o[k]=v; return o; }
+
+$("#exportGold").onclick=()=>{
+  if(!rows.length) return;
+  const gold=rows.filter(r=>r.__status==="accept").map(r=>{
+    const o=clean(r); delete o.__status; o.verified=true; return o; });
+  download(`${dsName}.gold.jsonl`, gold.map(o=>JSON.stringify(o)).join("\n")+"\n");
+};
+$("#exportAll").onclick=()=>{
+  if(!rows.length) return;
+  download(`${dsName}.progress.jsonl`, rows.map(r=>JSON.stringify(clean(r))).join("\n")+"\n");
+};
+$("#file").onchange=e=>{ const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader(); rd.onload=()=>load(rd.result, f.name); rd.readAsText(f); };
+
+document.addEventListener("keydown", e=>{
+  if(/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return; // don't hijack typing
+  if(!rows.length) return;
+  const m={a:"#bAcc",r:"#bRej",s:"#bSkip",j:"#bNext",k:"#bPrev"}[e.key];
+  if(m){ e.preventDefault(); $(m)?.click(); }
+});
+</script>
+</body>
+</html>

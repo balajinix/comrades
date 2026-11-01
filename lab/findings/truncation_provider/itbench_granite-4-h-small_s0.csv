@@ -1,0 +1,11 @@
+model,schema,sf,qid,family,has_workflow,facade,status,correct,steps,tool_errors,turns,prompt_tokens,completion_tokens,max_prompt_tokens,llm_latency_s,schema_tokens,calls,response_tokens,rows,response_bytes,by_reference,wall_s,delegate_turns,delegate_prompt_tokens,delegate_completion_tokens,seed,temperature,db_time_s,db_mem_peak_bytes,db_temp_table_peak_bytes,db_spill_peak_bytes,row_precision,row_recall
+provider/ibm/granite-4-h-small,itbench,35.0,IT-G1,large,True,sql+silent,answered,False,1,0,2,8231,2882,7366,30.62,702,1,6366,184,17741,False,34.7,,,,0,0.0,0.003,0,0,0,0.0,0.0
+provider/ibm/granite-4-h-small,itbench,35.0,IT-G1,large,True,sql+labelled,answered,False,1,0,2,8246,3188,7376,111.84,707,1,6371,184,17759,False,111.9,,,,0,0.0,0.003,0,0,0,0.0,0.0
+provider/ibm/granite-4-h-small,itbench,35.0,IT-G2,large,False,sql+silent,answered,False,1,0,3,31580,5611,17414,84.7,702,1,12383,363,34978,False,84.7,,,,0,0.0,0.004,0,0,0,0.0,0.0
+provider/ibm/granite-4-h-small,itbench,35.0,IT-G2,large,False,sql+labelled,parse_error,False,1,0,4,53352,12399,21607,235.24,707,1,12388,363,34996,False,235.3,,,,0,0.0,0.001,0,0,0,,
+provider/ibm/granite-4-h-small,itbench,35.0,IT-G3,large,False,sql+silent,parse_error,False,1,0,4,89661,12390,33714,374.03,702,1,24516,1000,68551,False,374.0,,,,0,0.0,0.005,0,0,0,,
+provider/ibm/granite-4-h-small,itbench,35.0,IT-G3,large,False,sql+labelled,parse_error,False,1,0,4,89792,12391,33756,326.11,707,1,24552,1000,68681,False,326.1,,,,0,0.0,0.01,0,0,0,,
+provider/ibm/granite-4-h-small,itbench,35.0,IT-G4,large,False,sql+silent,answered,False,1,0,2,40419,151,39553,13.9,702,1,38577,1000,106585,False,13.9,,,,0,0.0,0.004,0,0,0,0.0,0.0
+provider/ibm/granite-4-h-small,itbench,35.0,IT-G4,large,False,sql+labelled,answered,False,1,0,2,40465,151,39594,7.74,707,1,38613,1000,106715,False,7.8,,,,0,0.0,0.004,0,0,0,0.0,0.0
+provider/ibm/granite-4-h-small,itbench,35.0,IT-G5,large,False,sql+silent,answered,True,1,0,2,4648,2560,3785,31.92,702,1,2802,67,8131,False,31.9,,,,0,0.0,0.002,0,0,0,1.0,1.0
+provider/ibm/granite-4-h-small,itbench,35.0,IT-G5,large,False,sql+labelled,answered,True,1,0,2,4663,2560,3795,26.93,707,1,2807,67,8149,False,26.9,,,,0,0.0,0.001,0,0,0,1.0,1.0

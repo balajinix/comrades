@@ -1,0 +1,11 @@
+model,schema,sf,qid,family,has_workflow,facade,status,correct,steps,tool_errors,turns,prompt_tokens,completion_tokens,max_prompt_tokens,llm_latency_s,schema_tokens,calls,response_tokens,rows,response_bytes,by_reference,wall_s,delegate_turns,delegate_prompt_tokens,delegate_completion_tokens,seed,temperature,db_time_s,db_mem_peak_bytes,db_temp_table_peak_bytes,db_spill_peak_bytes,row_precision,row_recall
+provider/meta-llama/llama-3-3-70b-instruct,tpcds,1.0,DS-G1,large_list,False,sql+silent,parse_error,False,1,0,4,107702,12346,38936,274.6,3038,1,27407,1000,83977,False,280.9,,,,0,0.0,0.01,0,0,0,,
+provider/meta-llama/llama-3-3-70b-instruct,tpcds,1.0,DS-G1,large_list,False,sql+labelled,parse_error,False,1,0,4,107623,12346,38908,358.33,3043,1,27374,1000,84014,False,358.4,,,,0,0.0,0.01,0,0,0,,
+provider/meta-llama/llama-3-3-70b-instruct,tpcds,1.0,DS-G2,large_list,False,sql+silent,answered,True,1,0,2,8861,1384,5646,26.27,3038,1,2374,113,8097,False,26.3,,,,0,0.0,0.008,0,0,0,1.0,1.0
+provider/meta-llama/llama-3-3-70b-instruct,tpcds,1.0,DS-G2,large_list,False,sql+labelled,answered,True,1,0,2,8876,1384,5656,26.58,3043,1,2379,113,8115,False,26.6,,,,0,0.0,0.003,0,0,0,1.0,1.0
+provider/meta-llama/llama-3-3-70b-instruct,tpcds,1.0,DS-G3,large_list,False,sql+silent,parse_error,False,1,0,4,95766,12350,34960,364.59,3038,1,23438,911,79069,False,364.6,,,,0,0.0,0.013,0,0,0,,
+provider/meta-llama/llama-3-3-70b-instruct,tpcds,1.0,DS-G3,large_list,False,sql+labelled,answered,False,1,0,2,29974,141,26744,23.31,3043,1,23443,911,79087,False,23.4,,,,0,0.0,0.016,0,0,0,1.0,0.0055
+provider/meta-llama/llama-3-3-70b-instruct,tpcds,1.0,DS-G4,large_list,False,sql+silent,parse_error,False,1,0,4,52518,12353,20541,249.35,3038,1,9004,429,28986,False,249.4,,,,0,0.0,0.006,0,0,0,,
+provider/meta-llama/llama-3-3-70b-instruct,tpcds,1.0,DS-G4,large_list,False,sql+labelled,parse_error,False,1,0,4,52553,12353,20551,241.58,3043,1,9009,429,29004,False,241.6,,,,0,0.0,0.01,0,0,0,,
+provider/meta-llama/llama-3-3-70b-instruct,tpcds,1.0,DS-G5,large_list,False,sql+silent,parse_error,False,1,0,4,55094,12344,21401,356.76,3038,1,9877,521,31909,False,356.8,,,,0,0.0,0.014,0,0,0,,
+provider/meta-llama/llama-3-3-70b-instruct,tpcds,1.0,DS-G5,large_list,False,sql+labelled,parse_error,False,1,0,4,55129,12344,21411,240.4,3043,1,9882,521,31927,False,240.4,,,,0,0.0,0.013,0,0,0,,

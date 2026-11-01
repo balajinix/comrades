@@ -1,0 +1,5 @@
+{"id": "s-itsm", "family": "itsm", "hops": 1, "products": ["itsm"], "prompt": "What is the most recent ITSM incident?", "gold_tools": ["get_latest_incident"]}
+{"id": "s-cost", "family": "cost", "hops": 1, "products": ["cost"], "prompt": "List the cloud billing accounts.", "gold_tools": ["query_finops_billing_accounts"]}
+{"id": "s-infra-new", "family": "infra", "hops": 1, "products": ["infra"], "prompt": "What node (entity) types exist in the infrastructure graph?", "gold_tools": ["list_infra_node_schemas"]}
+{"id": "s-resil-new", "family": "resilience", "hops": 1, "products": ["resilience"], "prompt": "List the applications tracked in Resilience.", "gold_tools": ["list_resilience_applications"]}
+{"id": "s-apm", "family": "apm", "hops": 1, "products": ["apm"], "prompt": "Show the APM service topology for our applications.", "gold_tools": ["get_application_topology"]}

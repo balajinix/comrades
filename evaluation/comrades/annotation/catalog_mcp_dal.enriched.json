@@ -1,0 +1,4891 @@
+[
+ {
+  "name": "get_application_topology",
+  "description": "Get the service topology from APM Server.\nThis tool retrieves services and connections (call paths) between them for calls in the scope given by the parameters.",
+  "backend": "Resilience (resilience / compliance / security)",
+  "family_guess": "resilience",
+  "params": [
+   {
+    "name": "window_size",
+    "type": "integer",
+    "required": false,
+    "description": "Size of time window in milliseconds",
+    "default": null
+   },
+   {
+    "name": "to_timestamp",
+    "type": "integer",
+    "required": false,
+    "description": "Timestamp since Unix Epoch in milliseconds of the end of the time window",
+    "default": null
+   },
+   {
+    "name": "application_id",
+    "type": "string",
+    "required": false,
+    "description": "Filter by application ID",
+    "default": null
+   },
+   {
+    "name": "application_boundary_scope",
+    "type": "string",
+    "required": false,
+    "description": "Filter by application scope, i.e., INBOUND or ALL. The default value is INBOUND.",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/core/api/v1/login",
+   "/core/api/v1/authenticate",
+   "https://tenant-host",
+   "/api/v1/...",
+   "/core/api/v1/",
+   "/core/api/v1/applications",
+   "/core/api/v1/applications/{app_id}",
+   "/core/api/v1/applications/{app_id}/topology"
+  ],
+  "source_file": "resilience/base_client.py"
+ },
+ {
+  "name": "analyze_infrastructure",
+  "description": "Two-pass infrastructure analysis using machine-facing elicitation.\n\n**Pass 1 - Intent to Schema:**\nProvide intent and entity hint. Server returns full schema via MCP elicitation.\nThe server dynamically loads available entity types from the APM API catalog,\nensuring support for all monitored technologies in your environment.\n\nParameters:\n- intent: Natural language query (e.g., \"maximum heap size of JVM on host galactica1\")\n- entity: Entity hint (e.g., \"jvm\", \"kubernetes\", \"docker\", \"genai\", \"host\", \"db2\", \"mq\"  # docker resolves to APM plugin id \"docker\")\n  The system supports all entity types available in your APM installation, including\n  Kubernetes pods/deployments, JVM runtimes, hosts, databases, message queues, containers,\n  and any custom or newly added entity types.\n\n**Pass 2 - Selections to Results:**\nProvide exact selections from schema. Server builds payload and calls API.\n\nParameters:\n- selections: Dict with:\n  - entity_type: Exact entity type from schema (e.g., \"jvmRuntimePlatform\", \"kubernetesPod\")\n  - metrics: Array of exact metric names from schema (e.g., [\"jvm.heap.maxSize\", \"jvm.heap.used\"])\n  - aggregation: Aggregation type (e.g., \"max\", \"mean\", \"sum\")\n  - filters: List of dicts with name/value pairs (e.g., [{\"name\": \"host.name\", \"value\": \"galactica1\"}])\n  - groupBy: (optional) Array of tag names to group entities by (e.g., [\"host.name\"], [\"kubernetes.namespace.name\"])\n  - timeRange: (optional) Time range string (e.g., \"1h\", \"30m\", \"2h\", \"1d\"). Default: \"1h\"\n  - order: (optional) Dict with \"by\" (metric name) and \"direction\" (\"ASC\" or \"DESC\")\n\nReturns:\n    List of MCP content blocks (TextContent or EmbeddedResource)\n\nNote: Entity type support is automatically synchronized with your APM installation's\nplugin catalog, ensuring compatibility with all monitored technologies without manual updates.",
+  "backend": "APM (APM / observability)",
+  "family_guess": "apm",
+  "params": [
+   {
+    "name": "intent",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "entity",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "selections",
+    "type": "object",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "mcp-apm/src/infrastructure/infrastructure_analyze.py"
+ },
+ {
+  "name": "get_related_hosts",
+  "description": "Get hosts related to a specific snapshot.",
+  "backend": "APM (APM / observability)",
+  "family_guess": "apm",
+  "params": [
+   {
+    "name": "snapshot_id",
+    "type": "string",
+    "required": true,
+    "description": "The ID of the snapshot to find related hosts for (required)"
+   },
+   {
+    "name": "to_time",
+    "type": "integer",
+    "required": false,
+    "description": "End timestamp in milliseconds (optional)",
+    "default": null
+   },
+   {
+    "name": "window_size",
+    "type": "integer",
+    "required": false,
+    "description": "Window size in milliseconds (optional)",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "mcp-apm/src/infrastructure/infrastructure_topology.py"
+ },
+ {
+  "name": "get_topology",
+  "description": "Get the infrastructure topology information.",
+  "backend": "APM (APM / observability)",
+  "family_guess": "apm",
+  "params": [
+   {
+    "name": "include_data",
+    "type": "boolean",
+    "required": false,
+    "description": "Whether to include detailed snapshot data in nodes (optional, default: False)",
+    "default": false
+   }
+  ],
+  "api_hints": [],
+  "source_file": "mcp-apm/src/infrastructure/infrastructure_topology.py"
+ },
+ {
+  "name": "manage_applications",
+  "description": "Unified APM application resource manager for metrics, alerts, configurations, and catalog.\n\nResource Types:\n    - \"metrics\": Query application metrics, services, and endpoints\n    - \"alert_config\": Manage application-specific alert configurations\n    - \"global_alert_config\": Manage global application alert configurations\n    - \"settings\": Manage application perspectives, endpoints, services, manual services\n    - \"catalog\": Access application tag and metric catalog information\n    - \"analyze\": Analyze application traces and calls\n\nCRITICAL WORKFLOW - ALWAYS FOLLOW THIS ORDER:\n    1. FIRST: Call get_metric_catalog to get valid metrics\n       - resource_type=\"catalog\", operation=\"get_metric_catalog\"\n       - Returns: Available metrics with metricId, aggregations, and data sources\n    \n    2. SECOND: Call get_tag_catalog to get valid tag names\n       - resource_type=\"catalog\", operation=\"get_tag_catalog\"\n       - params: {\"use_case\": \"GROUPING\", \"data_source\": \"CALLS\"}\n    \n    3. THIRD: Use ONLY the tag names and metrics returned from catalog operations\n       - Metric names must match those from get_metric_catalog\n       - Tag names must match those from get_tag_catalog\n       - NEVER guess or invent tag names or metric names\n    \n    4. FOURTH: Call metrics operations with validated tag names and metrics\n       - Example invalid: \"calls.error.count\" (not in catalog)\n       - Example valid: \"calls\" with aggregation \"SUM\"\n\nMETRICS (resource_type=\"metrics\"):\n    operation: \"application\"\n    params: {time_frame, metrics, tag_filter_expression, group, order, pagination, include_internal, include_synthetic}\n\n    Aggregations: SUM, MEAN, MAX, MIN, P25, P50, P75, P90, P95, P98, P99, DISTINCT_COUNT, SUM_POSITIVE\n    Operators: EQUALS, NOT_EQUAL, CONTAINS, NOT_CONTAIN, STARTS_WITH, ENDS_WITH, GREATER_THAN, GREATER_OR_EQUAL_THAN, LESS_THAN, LESS_OR_EQUAL_THAN, NOT_EMPTY, IS_EMPTY\n\n    time_frame: {\"to\": <timestamp_or_datetime>, \"windowSize\": <milliseconds>}\n        - to: Unix timestamp (ms) OR datetime string (e.g., \"19 March 2026, 2:47 PM|IST\")\n        - windowSize: Duration in milliseconds (default: 3600000 = 1 hour)\n\n    List services: group={\"groupbyTag\": \"service.name\", \"groupbyTagEntity\": \"DESTINATION\"}\n    List endpoints: group={\"groupbyTag\": \"endpoint.name\", \"groupbyTagEntity\": \"DESTINATION\"}\n\nALERT_CONFIG (resource_type=\"alert_config\"):\n    operations: find_active, find_versions, find, create, update, delete, enable, disable, restore, update_baseline\n    params: {application_id OR application_name, id, alert_ids, valid_on, created, payload}\n\nGLOBAL_ALERT_CONFIG (resource_type=\"global_alert_config\"):\n    operations: find_active, find_versions, find, create, update, delete, enable, disable, restore\n    params: {application_id OR application_name, id, alert_ids, valid_on, created, payload}\n\nSETTINGS (resource_type=\"settings\"):\n    operations: get_all, get, create, update, delete, order, replace_all\n    params: {resource_subtype, id, application_name, payload, request_body}\n    resource_subtypes: \"application\", \"endpoint\", \"service\", \"manual_service\"\n\n    Creating application (resource_subtype=\"application\", operation=\"create\"):\n    REQUIRED: label | OPTIONAL: scope, boundaryScope, accessRules, tagFilterExpression\n    Minimal: params={\"resource_subtype\": \"application\", \"payload\": {\"label\": \"My App\"}}\n\nCATALOG (resource_type=\"catalog\"):\n    operations: get_tag_catalog, get_metric_catalog\n    params: {use_case, data_source, var_from}\n\n    get_metric_catalog - Get application metrics catalog with metadata (metricId, label, aggregations, beaconTypes)\n    get_tag_catalog - Get valid tag names for use_case and data_source\n        Valid use_case: \"GROUPING\", \"FILTERING\", \"SERVICE_MAPPING\", \"SMART_ALERTS\"\n        Valid data_source: \"CALLS\", \"TRACES\"\n\nANALYZE (resource_type=\"analyze\"):\n    operations: get_all_traces, get_trace_details\n    \n    get_all_traces - params: {payload}\n        payload: {timeFrame, includeInternal, includeSynthetic, tagFilterExpression, pagination, order}\n        timeFrame.to: Unix timestamp (ms) OR datetime string with timezone\n    \n    get_trace_details - params: {id, retrievalSize, offset, ingestionTime}\n        Returns: items, itemCount, canLoadMore, cursor for pagination\n\nArgs:\n    resource_type: \"metrics\", \"alert_config\", \"global_alert_config\", \"settings\", \"catalog\", or \"analyze\"\n    operation: Specific operation for the resource type\n    params: Operation-specific parameters (optional)\n    ctx: MCP context (internal)\n\nReturns:\n    Dictionary with results from the appropriate tool\n\nExamples:\n    # CATALOG operations\n    resource_type=\"catalog\", operation=\"get_metric_catalog\"\n    resource_type=\"catalog\", operation=\"get_tag_catalog\", params={\"use_case\": \"GROUPING\", \"data_source\": \"CALLS\", \"var_from\": 1710658800000}\n    \n    # METRICS operations\n    resource_type=\"metrics\", operation=\"application\", params={\"metrics\": [{\"metric\": \"calls\", \"aggregation\": \"SUM\"}, {\"metric\": \"latency\", \"aggregation\": \"MEAN\"}], \"tag_filter_expression\": {\"type\": \"TAG_FILTER\", \"name\": \"application.name\", \"operator\": \"EQUALS\", \"entity\": \"DESTINATION\", \"value\": \"All Services\"}, \"group\": {\"groupbyTag\": \"service.name\", \"groupbyTagEntity\": \"DESTINATION\"}, \"time_frame\": {\"to\": 1710658800000, \"windowSize\": 3600000}, \"order\": {\"by\": \"calls\", \"direction\": \"DESC\"}, \"pagination\": {\"page\": 1, \"pageSize\": 50}, \"include_internal\": False, \"include_synthetic\": False}\n    \n    # ALERT_CONFIG operations\n    resource_type=\"alert_config\", operation=\"find_active\", params={\"application_name\": \"All Services\", \"alert_ids\": [\"alert-1\", \"alert-2\"]}\n    resource_type=\"alert_config\", operation=\"find_versions\", params={\"application_id\": \"app-123\", \"id\": \"alert-456\"}\n    resource_type=\"alert_config\", operation=\"find\", params={\"application_id\": \"app-123\", \"id\": \"alert-456\", \"valid_on\": 1710658800000}\n    resource_type=\"alert_config\", operation=\"create\", params={\"application_id\": \"app-123\", \"payload\": {\"name\": \"High Error Rate\", \"severity\": 5}}\n    resource_type=\"alert_config\", operation=\"update\", params={\"application_id\": \"app-123\", \"id\": \"alert-456\", \"payload\": {\"name\": \"Updated Alert\"}}\n    resource_type=\"alert_config\", operation=\"delete\", params={\"application_id\": \"app-123\", \"id\": \"alert-456\"}\n    resource_type=\"alert_config\", operation=\"enable\", params={\"application_id\": \"app-123\", \"id\": \"alert-456\"}\n    resource_type=\"alert_config\", operation=\"disable\", params={\"application_id\": \"app-123\", \"id\": \"alert-456\"}\n    resource_type=\"alert_config\", operation=\"restore\", params={\"application_id\": \"app-123\", \"id\": \"alert-456\", \"created\": 1710658800000}\n    resource_type=\"alert_config\", operation=\"update_baseline\", params={\"application_id\": \"app-123\", \"id\": \"alert-456\"}\n    \n    # GLOBAL_ALERT_CONFIG operations\n    resource_type=\"global_alert_config\", operation=\"find_active\", params={\"application_name\": \"All Services\"}\n    resource_type=\"global_alert_config\", operation=\"find_versions\", params={\"application_id\": \"app-123\", \"id\": \"alert-789\"}\n    resource_type=\"global_alert_config\", operation=\"find\", params={\"application_id\": \"app-123\", \"id\": \"alert-789\", \"valid_on\": 1710658800000}\n    resource_type=\"global_alert_config\", operation=\"create\", params={\"application_id\": \"app-123\", \"payload\": {\"name\": \"Global Alert\"}}\n    resource_type=\"global_alert_config\", operation=\"update\", params={\"application_id\": \"app-123\", \"id\": \"alert-789\", \"payload\": {\"name\": \"Updated Global Alert\"}}\n    resource_type=\"global_alert_config\", operation=\"delete\", params={\"application_id\": \"app-123\", \"id\": \"alert-789\"}\n    resource_type=\"global_alert_config\", operation=\"enable\", params={\"application_id\": \"app-123\", \"id\": \"alert-789\"}\n    resource_type=\"global_alert_config\", operation=\"disable\", params={\"application_id\": \"app-123\", \"id\": \"alert-789\"}\n    resource_type=\"global_alert_config\", operation=\"restore\", params={\"application_id\": \"app-123\", \"id\": \"alert-789\", \"created\": 1710658800000}\n    \n    # SETTINGS operations\n    resource_type=\"settings\", operation=\"get_all\", params={\"resource_subtype\": \"application\"}\n    resource_type=\"settings\", operation=\"get\", params={\"resource_subtype\": \"application\", \"application_name\": \"My App\"}\n    resource_type=\"settings\", operation=\"create\", params={\"resource_subtype\": \"application\", \"payload\": {\"label\": \"My App\", \"scope\": \"INCLUDE_ALL_DOWNSTREAM\", \"boundaryScope\": \"ALL\"}}\n    resource_type=\"settings\", operation=\"update\", params={\"resource_subtype\": \"application\", \"id\": \"config-123\", \"payload\": {\"label\": \"Updated App\"}}\n    resource_type=\"settings\", operation=\"delete\", params={\"resource_subtype\": \"application\", \"id\": \"config-123\"}\n    resource_type=\"settings\", operation=\"order\", params={\"resource_subtype\": \"application\", \"request_body\": [\"config-1\", \"config-2\", \"config-3\"]}\n    resource_type=\"settings\", operation=\"replace_all\", params={\"resource_subtype\": \"endpoint\", \"request_body\": [{\"name\": \"endpoint1\"}, {\"name\": \"endpoint2\"}]}\n    \n    # ANALYZE operations\n    resource_type=\"analyze\", operation=\"get_all_traces\", params={\"payload\": {\"timeFrame\": {\"windowSize\": 3600000, \"to\": 1710658800000}, \"includeInternal\": False, \"includeSynthetic\": False, \"pagination\": {\"retrievalSize\": 200}}}\n    resource_type=\"analyze\", operation=\"get_trace_details\", params={\"id\": \"trace-123\", \"retrievalSize\": 100, \"offset\": 0, \"ingestionTime\": 1725519793}",
+  "backend": "APM (APM / observability)",
+  "family_guess": "apm",
+  "params": [
+   {
+    "name": "resource_type",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "operation",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "params",
+    "type": "object",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "mcp-apm/src/router/application_smart_router_tool.py"
+ },
+ {
+  "name": "manage_automation",
+  "description": "Unified APM automation action manager for catalog and execution history.\n\nResource Types:\n- \"catalog\": Browse and search automation actions\n- \"history\": View action execution history\n\nCATALOG (resource_type=\"catalog\"):\n    operations: get_actions, get_action_details, get_action_matches, get_action_matches_by_id_and_time_window, get_action_types, get_action_tags\n\n    List all actions:\n    operation=\"get_actions\"\n\n    Get action details:\n    operation=\"get_action_details\", params={\"action_id\": \"action-uuid\"}\n\n    Search for matching actions:\n    operation=\"get_action_matches\"\n    params:\n        - payload (required): dict with \"name\" and/or \"description\" fields\n        - target_snapshot_id (optional): snapshot ID to filter results\n    Example: params={\"payload\": {\"name\": \"CPU spends significant time waiting for input/output\", \"description\": \"Checks whether the system spends significant time waiting for input/output.\"}, \"target_snapshot_id\": \"snapshot-id\"}\n\n    Get action matches by ID and time window:\n    operation=\"get_action_matches_by_id_and_time_window\"\n    params:\n        - application_id (optional): application ID (either this or snapshot_id required)\n        - snapshot_id (optional): snapshot ID (either this or application_id required)\n        - to (optional): timestamp - milliseconds OR datetime string (e.g., \"19 March 2026, 2:47 PM|IST\")\n            If timezone not specified, defaults to UTC\n        - window_size (optional): time window in milliseconds\n    Example: params={\"application_id\": \"app-123\", \"snapshot_id\": \"snap-456\", \"to\": \"19 March 2026, 2:47 PM|IST\", \"window_size\": 3600000}\n\n    Get action types:\n    operation=\"get_action_types\"\n\n    Get action tags:\n    operation=\"get_action_tags\"\n\nHISTORY (resource_type=\"history\")\n    operations: list, get_details\n\n    List action instances:\n    operation=\"list\"\n    params (all optional):\n        - window_size: time window in milliseconds\n        - to: timestamp - milliseconds OR datetime string (e.g., \"19 March 2026, 2:47 PM|IST\")\n            If timezone not specified, defaults to UTC\n        - page: page number\n        - page_size: items per page\n        - target_snapshot_id: filter by snapshot ID\n        - event_id: filter by event ID\n        - event_specification_id: filter by event specification ID\n        - search: search text\n        - types: list of action types\n        - action_statuses: list of statuses (e.g., [\"SUCCESS\", \"FAILED\"])\n        - order_by: column name for sorting\n        - order_direction: \"ASC\" or \"DESC\"\n    Example: params={\"window_size\": 3600000, \"to\": 1234567890000, \"page\": 1, \"page_size\": 50, \"target_snapshot_id\": \"snapshot-id\", \"event_id\": \"event-id\", \"event_specification_id\": \"spec-id\", \"search\": \"search text\", \"types\": [\"type1\", \"type2\"], \"action_statuses\": [\"SUCCESS\", \"FAILED\"], \"order_by\": \"column_name\", \"order_direction\": \"ASC\"}\n\n    Get action instance details:\n    operation=\"get_details\"\n    params:\n        - action_instance_id (required): instance UUID\n        - window_size (optional): time window in milliseconds (default: 10 minutes)\n        - to (optional): timestamp - milliseconds OR datetime string (e.g., \"19 March 2026, 2:47 PM|IST\")\n            If timezone not specified, defaults to UTC\n    Example: params={\"action_instance_id\": \"instance-uuid\", \"window_size\": 600000, \"to\": \"19 March 2026, 2:47 PM|IST\"}\n\nArgs:\n    resource_type: \"catalog\" or \"history\"\n    operation: Specific operation for the resource type\n    params: Operation-specific parameters (optional)\n    ctx: MCP context (internal)\n\nReturns:\n    Dictionary with results from the appropriate tool\n\nExamples:\n    resource_type=\"catalog\", operation=\"get_actions\"\n    resource_type=\"catalog\", operation=\"get_action_matches\", params={\"payload\": {\"name\": \"CPU\", \"description\": \"monitoring\"}}\n    resource_type=\"catalog\", operation=\"get_action_matches_by_id_and_time_window\", params={\"application_id\": \"app-123\", \"to\": \"19 March 2026, 2:47 PM|IST\", \"window_size\": 3600000}\n    resource_type=\"history\", operation=\"list\", params={\"window_size\": 3600000, \"to\": 1234567890000, \"page_size\": 20}\n    resource_type=\"history\", operation=\"get_details\", params={\"action_instance_id\": \"instance-uuid\", \"to\": \"19 March 2026, 2:47 PM|IST\"}",
+  "backend": "APM (APM / observability)",
+  "family_guess": "apm",
+  "params": [
+   {
+    "name": "resource_type",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "operation",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "params",
+    "type": "object",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "mcp-apm/src/router/automation_smart_router_tool.py"
+ },
+ {
+  "name": "manage_custom_dashboards",
+  "description": "Unified APM custom dashboard manager for CRUD operations.\n\nOperations: get_all, get, create, update, delete, get_shareable_users, get_shareable_api_tokens\n\nParameters (params dict):\n- dashboard_id: Dashboard ID (for get, update, delete only)\n- custom_dashboard: Dashboard config (for create, update) - see model below\n- query: Search filter (for get_all)\n- page_size: Items per page (for get_all)\n- page: Page number, 0-indexed (for get_all)\n- with_total_hits: Include total count (for get_all)\n\nNote: get_shareable_users and get_shareable_api_tokens return ALL users/tokens globally, not for a specific dashboard\n\nCustomDashboard Model:\n- title: string (min 1 char) - REQUIRED\n- accessRules: array[1-64] of {accessType: \"READ\"|\"READ_WRITE\", relationType: \"USER\"|\"API_TOKEN\"|\"ROLE\"|\"TEAM\"|\"GLOBAL\", relatedId: string|null} - defaults to global READ_WRITE if omitted\n- widgets: array[0-128] of {id: string(max 64), type: string(min 1), config: object} - defaults to [] if omitted\n\nWidget Fields (all optional except id, type, config): title (string), x (int 0-11), y (int >=0), width (int 1-12), height (int >=1)\n\nExamples:\n    get_all: operation=\"get_all\", params={\"page_size\": 20, \"query\": \"prod\"}\n    get: operation=\"get\", params={\"dashboard_id\": \"abc123\"}\n    create: operation=\"create\", params={\"custom_dashboard\": {\"title\": \"My Dashboard\", \"accessRules\": [{\"accessType\": \"READ_WRITE\", \"relationType\": \"GLOBAL\"}], \"widgets\": []}}\n    create with widget: operation=\"create\", params={\"custom_dashboard\": {\"title\": \"Metrics\", \"accessRules\": [{\"accessType\": \"READ_WRITE\", \"relationType\": \"GLOBAL\"}], \"widgets\": [{\"id\": \"w1\", \"type\": \"chart\", \"config\": {\"metric\": \"latency\"}, \"x\": 0, \"y\": 0, \"width\": 6, \"height\": 4}]}}\n    update: operation=\"update\", params={\"dashboard_id\": \"abc123\", \"custom_dashboard\": {\"title\": \"Updated\", \"accessRules\": [{\"accessType\": \"READ_WRITE\", \"relationType\": \"GLOBAL\"}], \"widgets\": []}}\n    delete: operation=\"delete\", params={\"dashboard_id\": \"abc123\"}",
+  "backend": "APM (APM / observability)",
+  "family_guess": "apm",
+  "params": [
+   {
+    "name": "operation",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "params",
+    "type": "object",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "mcp-apm/src/router/custom_dashboard_smart_router_tool.py"
+ },
+ {
+  "name": "manage_events",
+  "description": "Unified APM events resource manager for events monitoring operations.\n\nOperations:\n    - \"get_events\": Get all events\n    - \"get_event\": Get a specific event by ID\n    - \"get_kubernetes_info_events\": Get Kubernetes info events with detailed analysis\n    - \"get_agent_monitoring_events\": Get agent monitoring events with detailed analysis\n    - \"get_events_by_ids\": Get multiple events by their IDs\n\nParameters (params dict):\n- For \"get_event\" and \"get_events_by_ids\", pass flat params:\n    - event_id: Event ID (required for get_event)\n    - event_ids: List of event IDs or comma-separated string (required for get_events_by_ids)\n- For \"get_kubernetes_info_events\" and \"get_agent_monitoring_events\", pass flat params:\n    - from_time: Start timestamp - milliseconds OR datetime string (e.g., \"19 March 2026, 2:47 PM|IST\" or \"19 March 2026, 2:47 PM\")\n        If timezone not specified in datetime string, defaults to UTC\n    - to_time: End timestamp - milliseconds OR datetime string (e.g., \"19 March 2026, 2:47 PM|IST\" or \"19 March 2026, 2:47 PM\")\n        If timezone not specified in datetime string, defaults to UTC\n    - time_range: Natural language time range like \"last 24 hours\", \"last 2 days\"\n    - query: Optional query string for agent monitoring events\n    - max_events: Maximum number of events to process for analysis (optional, default 50)\n        NOTE: This is a post-processing limit, not an API parameter\n- For \"get_events\", pass a nested filters object:\n    - filters: Dictionary containing event filters.\n        - from_time: Start timestamp - milliseconds OR datetime string\n        - to_time: End timestamp - milliseconds OR datetime string\n        - time_range: Natural language time range like \"last 24 hours\", \"last 2 days\"\n        - query: Optional query string\n        - max_events: Maximum number of events to process for analysis (optional, default 50)\n        - filter_event_updates: Boolean flag to filter results to only show events with state changes within timeframe (optional)\n        - exclude_triggered_before: Boolean flag to exclude events triggered before the timeframe (optional)\n            NOTE: This is a boolean flag, not a timestamp\n        - event_type_filters: List of event type filters (optional, e.g., [\"INCIDENT\", \"ISSUE\", \"CHANGE\"]).\n            NOTE: Allowed values: INCIDENT, ISSUE, CHANGE. Invalid values will result in an error.\n        - entity_type: Affected entity type to filter by (optional)\n            * For infrastructure incidents: Use entity types like \"host\", \"docker\", \"kubernetes\"\n            * For application incidents: Use \"application\" - this filters events with applicationId\n            * For service incidents: Use \"service\" - this filters events with serviceId\n        - entity_name: Affected entity name to filter by (e.g., \"Kubernetes Pod\", \"Process\", \"CRI-O Container\") (optional, supports partial matches)\n        - state: Event state to filter by (e.g., \"open\", \"closed\") (optional)\n        - problem: Problem description to filter events by (e.g., \"CPU usage high\", \"High error rate\", \"online\") (optional)\n        - severity: Event severity to filter by (exact match only). (optional)\n            NOTE: Allowed values (strict): -1 \u2192 change (informational events), 5 \u2192 warning, 10 \u2192 critical.\n        - event_specification_id: Filter events by event specification ID (optional)\n\nArgs:\n    operation: Operation to perform\n    params: Operation-specific parameters (optional)\n    ctx: MCP context (internal)\n\nReturns:\n    Dictionary with results from the appropriate tool\n\nExamples:\n    operation=\"get_event\", params={\"event_id\": \"1a2b3c4d5e6f\"}\n    operation=\"get_kubernetes_info_events\", params={\"time_range\": \"last 24 hours\", \"max_events\": 50}\n    operation=\"get_agent_monitoring_events\", params={\"query\": \"Monitoring issue\", \"from_time\": \"19 March 2026, 2:47 PM|IST\", \"to_time\": \"20 March 2026, 2:47 PM|IST\", \"max_events\": 100}\n    operation=\"get_events\", params={\"filters\": {\"time_range\": \"last 24 hours\", \"event_type_filters\": [\"INCIDENT\"], \"entity_type\": \"service\", \"entity_name\": \"payment-service\", \"state\": \"open\", \"problem\": \"High error rate\", \"severity\": 10, \"max_events\": 50, \"filter_event_updates\": True, \"exclude_triggered_before\": False}}\n    operation=\"get_events_by_ids\", params={\"event_ids\": [\"1a2b3c4d5e6f\", \"7g8h9i0j1k2l\"]}",
+  "backend": "APM (APM / observability)",
+  "family_guess": "apm",
+  "params": [
+   {
+    "name": "operation",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "params",
+    "type": "object",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "mcp-apm/src/router/events_smart_router_tool.py"
+ },
+ {
+  "name": "manage_mobile_apps",
+  "description": "Unified APM mobile app resource manager for beacon monitoring, catalog, configuration, and alert operations.\n\nResource Types:\n    - \"analyze\": Query mobile app beacon data with grouping or filtering\n    - \"catalog\": Get available metrics and tags for mobile app monitoring\n    - \"configuration\": Get mobile app configurations\n    - \"advanced_config\": Retrieve advanced configurations (geo-location, IP masking, geo rules, source map upload config, get_mobile_app_source_map_upload_config_by_id) - READ ONLY\n    - \"alert\": Get available alert configurations for mobile app monitoring\n\nCRITICAL WORKFLOW - ALWAYS FOLLOW THIS ORDER:\n    1. FIRST: Call get_mobile_app_metric_catalog to get valid metrics\n       - resource_type=\"catalog\", operation=\"get_mobile_app_metric_catalog\"\n       - Returns: Available metrics with metricId, aggregations, and beacon types\n    \n    2. SECOND: Call get_mobile_app_tag_catalog to get valid tag names\n       - resource_type=\"catalog\", operation=\"get_mobile_app_tag_catalog\"\n       - params: {\"beacon_type\": \"SESSION_START\", \"use_case\": \"FILTERING\"}\n    \n    3. THIRD: Use ONLY the tag names and metrics returned from catalog operations\n       - Tag names MUST start with \"mobileBeacon.\" (e.g., \"mobileBeacon.mobileApp.name\")\n       - Metric names must match those from get_mobile_app_metric_catalog\n       - NEVER guess or invent tag names or metric names\n    \n    4. FOURTH: Call analyze operations with validated tag names and metrics\n       - ALWAYS include \"entity\": \"NOT_APPLICABLE\" in EVERY TAG_FILTER\n    \n    Default beacon_type: \"SESSION_START\" | Default use_case for get_all_mobile_app_beacons: \"FILTERING\"\n\nANALYZE (resource_type=\"analyze\"):\n    operations: get_all_mobile_app_beacons, get_mobile_app_beacon_groups\n    params: {time_frame, beacon_type, fill_time_series, pagination, tag_filter_expression (optional), metrics (optional), group (optional), order (optional)}\n\n    Aggregations: SUM, MEAN, MAX, MIN, P25, P50, P75, P90, P95, P98, P99, P99_9, P99_99, DISTINCT_COUNT, SUM_POSITIVE, PER_SECOND, INCREASE\n    Operators: EQUALS, NOT_EQUAL, CONTAINS, NOT_CONTAIN, STARTS_WITH, ENDS_WITH, NOT_STARTS_WITH, NOT_ENDS_WITH, GREATER_THAN, GREATER_OR_EQUAL_THAN, LESS_THAN, LESS_OR_EQUAL_THAN, NOT_EMPTY, IS_EMPTY, NOT_BLANK, IS_BLANK, REGEX_MATCH\n\n    time_frame: {\"to\": <timestamp_or_datetime>, \"windowSize\": <milliseconds>}\n        - to: Unix timestamp in milliseconds OR datetime string (e.g., \"19 March 2026, 2:47 PM|IST\")\n        - If timezone not specified in datetime string, defaults to UTC\n        - windowSize: Duration in milliseconds (default: 3600000 = 1 hour)\n\n    tag_filter_expression: CRITICAL - Entity field is REQUIRED for ALL tag filters\n        - ALWAYS set \"entity\": \"NOT_APPLICABLE\" for ALL mobile app beacon tags\n        - This applies to ALL tags: mobileBeacon.mobileApp.*, mobileBeacon.view.*, mobileBeacon.device.*, mobileBeacon.geo.*, etc.\n        - The entity field is MANDATORY - never omit it or set it to null\n        - Tag names MUST start with \"mobileBeacon.\" - get valid names from get_mobile_app_tag_catalog first\n        \n        Examples:\n          * {\"type\": \"TAG_FILTER\", \"name\": \"mobileBeacon.mobileApp.name\", \"operator\": \"EQUALS\", \"entity\": \"NOT_APPLICABLE\", \"value\": \"Robot Shop\"}\n          * {\"type\": \"TAG_FILTER\", \"name\": \"mobileBeacon.view.name\", \"operator\": \"EQUALS\", \"entity\": \"NOT_APPLICABLE\", \"value\": \"Products\"}\n          * {\"type\": \"TAG_FILTER\", \"name\": \"mobileBeacon.device.model\", \"operator\": \"EQUALS\", \"entity\": \"NOT_APPLICABLE\", \"value\": \"iPhone 12\"}\n        \n    get_all_mobile_app_beacons - Use for individual beacon data (e.g., \"list all session start beacons\")\n    get_mobile_app_beacon_groups - Use for grouped/aggregated beacon metrics (e.g., \"beacon count per mobile app\")\n\nCATALOG (resource_type=\"catalog\"):\n    operations: get_mobile_app_metric_catalog, get_mobile_app_tag_catalog\n    params: {beacon_type, use_case}\n\n    get_mobile_app_metric_catalog - Get mobile app metrics catalog with necessary metadata for query planning (metricId, label, description, formatter, aggregations, beaconTypes). Use params.view=\"full\" to retrieve raw SDK metadata (rarely needed).\n    \n    get_mobile_app_tag_catalog - MUST CALL THIS FIRST before using any tag names\n        Returns: List of valid tag names that start with \"mobileBeacon.\"\n        Valid beacon_type: \"SESSION_START\", \"VIEW_CHANGE\", \"HTTP_REQUEST\", \"CUSTOM\", \"CRASH\", \"PERF\", \"DROP_BEACON\"\n        Valid use_case: \"GROUPING\", \"FILTERING\", \"SERVICE_MAPPING\", \"SMART_ALERTS\", etc.\n        \n        Example call:\n        resource_type=\"catalog\", operation=\"get_mobile_app_tag_catalog\",\n        params={\"beacon_type\": \"SESSION_START\", \"use_case\": \"FILTERING\"}\n\nCONFIGURATION (resource_type=\"configuration\"):\n    operations: get_all, get\n    params: {mobile_app_id, mobile_app_name}\n\n    get_all - List all mobile apps\n    get - Get mobile app by ID or name (supports name resolution)\n\n    NOTE: Create, Update, Delete operations are not available.\n            Use the APM UI for mobile app configuration modifications.\n\nADVANCED_CONFIG (resource_type=\"advanced_config\"):\n    operations: get_geo_config, get_ip_masking, get_geo_rules, get_source_map_upload_config, get_mobile_app_source_map_upload_config_by_id\n    params: {mobile_app_id, mobile_app_name, config_id (for get_mobile_app_source_map_upload_configuration_by_id)}\n\n    NOTE: These are READ-ONLY operations for retrieving advanced configurations.\n            Use the APM UI for modifications.\n            Source map operations are not currently available due to authentication limitations.\n\n    get_geo_config - Get geo-location configuration\n        Returns: geoDetailRemoval setting and geoMappingRules array\n    get_ip_masking - Get IP masking configuration\n        Returns: ipMasking setting (DEFAULT ,STRICT ,REMOVE_ALL_DETAILS)\n    get_geo_rules - Get custom geo mapping rules\n        Returns: Array of geo mapping rules with CIDR ranges and location data\n    get_source_map_upload_config - Get source map upload configuration details\n        Returns: Source map upload configuration settings\n    get_mobile_app_source_map_upload_config_by_id - Get specific source map upload configuration by ID\n        Returns: Source map upload configuration settings for the specified ID\n\nALERT (resource_type=\"alert\"):\n    operations: find_active_mobile_app_alert_configs, find_mobile_app_alert_config\n    params: {mobile_app_id, alert_ids, id, valid_on}\n\n    find_active_mobile_app_alert_configs - Get all alert configurations for a mobile app\n        - mobile_app_id: Mobile app ID to get alert configs for (required)\n        - alert_ids: Optional list of specific alert IDs to filter (optional)\n    \n    find_mobile_app_alert_config - Get a specific alert configuration by ID\n        - id: Specific alert config ID to retrieve (required)\n        - valid_on: Unix timestamp to retrieve config valid at that time (optional, defaults to latest active version)\n\nArgs:\n    resource_type: \"analyze\", \"catalog\", \"configuration\", or \"advanced_config\", \"alert\"\n    operation: Specific operation for the resource type\n    params: Operation-specific parameters (optional)\n\nReturns:\n    Dictionary with results from the appropriate tool\n\n        Examples:\n            resource_type=\"catalog\", operation=\"get_mobile_app_tag_catalog\", params={\"beacon_type\": \"SESSION_START\", \"use_case\": \"GROUPING\"}\n            resource_type=\"analyze\", operation=\"get_mobile_app_beacon_groups\", params={\"metrics\": [{\"metric\": \"beaconCount\", \"aggregation\": \"SUM\"}], \"group\": {\"groupByTag\": \"mobileBeacon.view.name\"}, \"time_frame\": {\"to\": \"19 March 2026, 2:47 PM|IST\", \"windowSize\": 3600000}, \"beacon_type\": \"SESSION_START\"}\n            resource_type=\"analyze\", operation=\"get_all_mobile_app_beacons\", params={\"time_frame\": {\"to\": 1234567890000, \"windowSize\": 3600000}, \"beacon_type\": \"SESSION_START\", \"pagination\": {\"retrievalSize\": 50}}\n            resource_type=\"catalog\", operation=\"get_mobile_app_metric_catalog\"\n            resource_type=\"configuration\", operation=\"get_all\"\n            resource_type=\"configuration\", operation=\"get\", params={\"mobile_app_name\": \"robot-shop\"}\n            resource_type=\"advanced_config\", operation=\"get_geo_config\", params={\"mobile_app_name\": \"robot-shop\"}",
+  "backend": "APM (APM / observability)",
+  "family_guess": "apm",
+  "params": [
+   {
+    "name": "resource_type",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "operation",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "params",
+    "type": "object",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "mcp-apm/src/router/mobile_app_smart_router.py"
+ },
+ {
+  "name": "manage_releases",
+  "description": "Unified releases manager for tracking deployments and analyzing release impact.\n\nOperations: get_all_releases, get_release, create_release, update_release, delete_release\n\nGET_ALL_RELEASES - List releases in time range with pagination and filtering\n    params: from_time, to_time, name_filter, page_number, page_size\n    Time params support: milliseconds (1742369820000) OR \"datetime|timezone\" (\"19 March 2026, 2:47 PM|IST\")\n    name_filter: Filter releases by name (case-insensitive substring match)\n    page_number: Page number (1-based, use with page_size)\n    page_size: Results per page (default: 50)\n\nGET_RELEASE - Get release by ID\n    params: release_id (required)\n    Returns: id, name, start, applications, services, scopes\n    Use release.start with manage_applications/manage_events to analyze post-release performance/incidents\n\nCREATE_RELEASE - Create new release\n    params: name (required), start (required), applications, services\n    name: Release identifier (e.g., \"frontend/release-2000\")\n    start: Deployment timestamp - milliseconds OR \"datetime|timezone\"\n    applications: [{\"name\": \"app_name\"}]\n    services: [{\"name\": \"service_name\", \"scopedTo\": {...}}]\n\nUPDATE_RELEASE - Update existing release\n    params: release_id (required), name (required), start (required), applications, services\n    Same format as create_release\n\nDELETE_RELEASE - Delete release\n    params: release_id (required)\n\nExamples:\n    # List all\n    operation=\"get_all_releases\"\n\n    # List with time range\n    operation=\"get_all_releases\", params={\"from_time\": \"19 March 2026, 2:00 PM|IST\", \"to_time\": \"19 March 2026, 5:00 PM|IST\"}\n\n    # List with name filter\n    operation=\"get_all_releases\", params={\"name_filter\": \"frontend\"}\n\n    # List with pagination\n    operation=\"get_all_releases\", params={\"page_number\": 1, \"page_size\": 50}\n\n    # List with all filters\n    operation=\"get_all_releases\", params={\"from_time\": \"19 March 2026, 2:00 PM|IST\", \"to_time\": \"19 March 2026, 5:00 PM|IST\", \"name_filter\": \"release\", \"page_number\": 1, \"page_size\": 20}\n\n    # Get by ID\n    operation=\"get_release\", params={\"release_id\": \"l1wgr3DsQkGLf8u18JiGsg\"}\n\n    # Create\n    operation=\"create_release\", params={\"name\": \"frontend/release-2000\", \"start\": \"19 March 2026, 2:47 PM|IST\", \"applications\": [{\"name\": \"My App\"}]}\n\n    # Update\n    operation=\"update_release\", params={\"release_id\": \"l1wgr3DsQkGLf8u18JiGsg\", \"name\": \"frontend/release-2001\", \"start\": 1742349976000}\n\n    # Delete\n    operation=\"delete_release\", params={\"release_id\": \"l1wgr3DsQkGLf8u18JiGsg\"}",
+  "backend": "APM (APM / observability)",
+  "family_guess": "apm",
+  "params": [
+   {
+    "name": "operation",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "params",
+    "type": "object",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "mcp-apm/src/router/releases_smart_router_tool.py"
+ },
+ {
+  "name": "manage_slo",
+  "description": "Unified SLO manager for configurations, reports, alerts, and corrections.\n\nCONFIGURATION (resource_type=\"configuration\") - Operations: get_all, get_by_id, create, update, delete, get_tags\n    get_all: List/filter configs - params: page_size (default: 10), page, order_by, order_direction, query, tag, entity_type, infra_entity_types, kubernetes_cluster_uuid, blueprint, slo_ids, slo_status, entity_ids, grouped, refresh, rbac_tags\n        page_size: Number of items per page (default: 10)\n        query: Filter by name or matching names (e.g., query=\"my-slo\" to find SLOs with \"my-slo\" in name)\n    get_by_id: Get config by ID - params: id (required), refresh\n    create: Create config - params: payload (required) with name, entity, indicator, target (0.0-0.9999), timeWindow, tags\n        entity: {type: \"application\", applicationId: \"...\", boundaryScope: \"ALL\"/\"INBOUND\"/\"DEFAULT\"} (boundaryScope REQUIRED)\n        indicator: {type: \"timeBased\"/\"eventBased\", blueprint: \"latency\"/\"availability\", threshold: 100, aggregation: \"P90\"/\"P95\"}\n        timeWindow: {type: \"rolling\"/\"fixed\", duration: 1, durationUnit: \"week\"/\"day\"/\"hour\"/\"minute\"}\n    update: Update config (requires ALL fields) - params: id (required), payload (required, same as create)\n        CRITICAL: MUST use ID (not name). Fetch via get_by_id first, merge changes, then update with complete payload\n    delete: Delete config - params: id (required)\n    get_tags: List tags - params: query, tag, entity_type\n\nREPORT (resource_type=\"report\") - Operations: get\n    get: Generate SLO report - params: slo_id (required), var_from, to, exclude_correction_id, include_correction_id\n        Returns: SLI value, SLO target, error budget (remaining/spent/total), burn rate, time range, charts\n        Time params: var_from/to can be provided as:\n            - Unix timestamp in milliseconds (e.g., 1741604400000)\n            - Human-readable datetime string (e.g., \"10 March 2026, 2:00 PM\")\n            - Datetime with timezone (e.g., \"10 March 2026, 2:00 PM|IST\")\n            - If no timezone specified, UTC is assumed\n        Supported datetime formats: \"10 March 2026, 2:00 PM\", \"2026-03-10 14:00:00\", \"March 10, 2026 2 PM\", etc.\n\nALERT (resource_type=\"alert\") - Operations: find_active, find, find_versions, create, update, delete, disable, enable, restore\n    find_active: Find active alerts - params: slo_id, alert_ids\n    find: Get alert by ID - params: id (required), valid_on\n    find_versions: Get alert versions - params: id (required)\n    create: Create alert - params: payload (required) with name, description, sloIds, rule, severity, alertChannelIds, timeThreshold, customPayloadFields\n        REQUIRED FIELDS: name, description, sloIds (list), rule, severity (5 or 10 ONLY), alertChannelIds (list), timeThreshold, customPayloadFields (list, can be empty)\n        rule: {alertType: \"ERROR_BUDGET\", metric: \"BURN_RATE\"/\"BURNED_PERCENTAGE\"/\"BURN_RATE_V2\"} OR {alertType: \"SERVICE_LEVELS_OBJECTIVE\"}\n        timeThreshold: {expiry: 604800000, timeWindow: 604800000} (values in milliseconds - NOT type/value format)\n        customPayloadFields: [{type: \"staticString\", key: \"foo\", value: \"bar\"}] (use proper discriminated union types)\n        threshold (optional): {type: \"staticThreshold\", operator: \">=\", value: 20.0} (required for some alert types)\n        burnRateTimeWindows (REQUIRED for BURN_RATE metric): {longTimeWindow: {duration: 1, durationType: \"hour\"}, shortTimeWindow: {duration: 5, durationType: \"minute\"}}\n    update: Update alert (requires ALL fields) - params: id (required), payload (required, same as create)\n        CRITICAL: MUST use ID (not name). Fetch via find first, merge changes, then update with complete payload\n    delete: Delete alert - params: id (required)\n    disable: Disable alert - params: id (required)\n    enable: Enable alert - params: id (required)\n    restore: Restore alert to version - params: id (required), created (required - timestamp from version)\n\nCORRECTION (resource_type=\"correction\") - Operations: get_all, get_by_id, create, update, delete\n    get_all: List correction windows - params: page_size (default: 10), page, order_by, order_direction, query, tag, id, slo_id, refresh\n        page_size: Number of items per page (default: 10)\n        query: Filter by name or matching names (e.g., query=\"maintenance\" to find corrections with \"maintenance\" in name)\n    get_by_id: Get correction by ID - params: id (required)\n    create: Create correction window - params: payload (required) with name, scheduling, sloIds, description, tags, active\n        REQUIRED FIELDS: name, scheduling (with duration, durationUnit, startTime optional, recurrent optional, recurrentRule optional)\n        scheduling: {duration: 1, durationUnit: \"hour\"/\"day\"/\"week\"/\"month\", startTime: <timestamp_or_datetime>, recurrent: true/false, recurrentRule: \"...\"}\n        durationUnit: Must be one of: millisecond, second, minute, hour, day, week, month\n        startTime: Can be provided as:\n            - Unix timestamp in milliseconds (e.g., 1741604400000)\n            - Human-readable datetime string (e.g., \"10 March 2026, 2:00 PM\")\n            - Datetime with timezone (e.g., \"10 March 2026, 2:00 PM|IST\")\n            - If no timezone specified, UTC is assumed\n            - CRITICAL: Always include timezone for correction windows to ensure accurate time context\n    update: Update correction window - params: id (required), payload (required, same as create)\n        CRITICAL: MUST use ID (not name). Always update by ID only\n    delete: Delete correction window - params: id (required)\n\nExamples:\n    # Config: List all\n    resource_type=\"configuration\", operation=\"get_all\"\n\n    # Config: Get by ID\n    resource_type=\"configuration\", operation=\"get_by_id\", params={\"id\": \"slo-123\"}\n\n    # Config: Create\n    resource_type=\"configuration\", operation=\"create\", params={\"payload\": {\"name\": \"API SLO\", \"entity\": {\"type\": \"application\", \"applicationId\": \"app-123\", \"boundaryScope\": \"ALL\"}, \"indicator\": {\"type\": \"timeBased\", \"blueprint\": \"latency\", \"threshold\": 100, \"aggregation\": \"P90\"}, \"target\": 0.95, \"timeWindow\": {\"type\": \"rolling\", \"duration\": 1, \"durationUnit\": \"week\"}, \"tags\": [\"api\"]}}\n\n    # Report: Get with datetime\n    resource_type=\"report\", operation=\"get\", params={\"slo_id\": \"slo-123\", \"var_from\": \"10 March 2026, 2:00 PM|IST\", \"to\": \"17 March 2026, 2:00 PM|IST\"}\n\n    # Alert: Find active\n    resource_type=\"alert\", operation=\"find_active\", params={\"slo_id\": \"slo-123\"}\n\n    # Alert: Create (all required fields)\n    resource_type=\"alert\", operation=\"create\", params={\"payload\": {\"name\": \"Burn Rate Alert\", \"description\": \"High burn rate\", \"sloIds\": [\"slo-123\"], \"rule\": {\"alertType\": \"ERROR_BUDGET\", \"metric\": \"BURN_RATE\"}, \"severity\": 10, \"alertChannelIds\": [\"ch-123\"], \"timeThreshold\": {\"expiry\": 604800000, \"timeWindow\": 604800000}, \"customPayloadFields\": [{\"type\": \"staticString\", \"key\": \"env\", \"value\": \"prod\"}], \"threshold\": {\"type\": \"staticThreshold\", \"operator\": \">=\", \"value\": 2.0}, \"burnRateTimeWindows\": {\"longTimeWindow\": {\"duration\": 1, \"durationType\": \"hour\"}, \"shortTimeWindow\": {\"duration\": 5, \"durationType\": \"minute\"}}}}\n\n    # Correction: List all\n    resource_type=\"correction\", operation=\"get_all\"\n\n    # Correction: Create with datetime\n    resource_type=\"correction\", operation=\"create\", params={\"payload\": {\"name\": \"Maintenance\", \"scheduling\": {\"duration\": 2, \"durationUnit\": \"hour\", \"startTime\": \"12 March 2026, 1:47 AM|IST\"}, \"sloIds\": [\"slo-123\"], \"description\": \"Planned maintenance\", \"tags\": [\"maint\"], \"active\": True}}\n\n    # Elicitation: Missing timezone\n    # Input: resource_type=\"report\", operation=\"get\", params={\"slo_id\": \"abc\", \"var_from\": \"10 March 2026, 2:00 PM\"}\n    # Response: {\"elicitation_needed\": True, \"message\": \"I need timezone...\", \"missing_parameters\": [\"timezone\"]}\n\n    # Elicitation: Missing alert fields\n    # Input: resource_type=\"alert\", operation=\"create\", params={\"payload\": {\"name\": \"Alert\"}}\n    # Response: {\"elicitation_needed\": True, \"message\": \"I need...\", \"missing_parameters\": [...]}",
+  "backend": "APM (APM / observability)",
+  "family_guess": "apm",
+  "params": [
+   {
+    "name": "resource_type",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "operation",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "params",
+    "type": "object",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "mcp-apm/src/router/slo_smart_router_tool.py"
+ },
+ {
+  "name": "manage_websites",
+  "description": "Unified APM website resource manager for beacon monitoring, catalog, configuration and alert operations.\n\nResource Types:\n    - \"analyze\": Query website beacon data with grouping or filtering\n    - \"catalog\": Get available metrics and tags for website monitoring\n    - \"configuration\": Get website configurations\n    - \"advanced_config\": Retrieve advanced configurations (geo-location, IP masking, geo rules) - READ ONLY\n    - \"alert\": Get mobile app alert configurations\n\nCRITICAL WORKFLOW:\n    BEFORE calling analyze operations, you MUST call get_tag_catalog to get valid tag names.\n    Default beacon_type: \"PAGELOAD\" | Default use_case: get_beacon_groups=\"GROUPING\", get_beacons=\"FILTERING\"\n\nANALYZE (resource_type=\"analyze\"):\n    operations: get_beacon_groups, get_beacons\n    params: {metrics, group, tag_filter_expression, time_frame, beacon_type, fill_time_series, order, pagination}\n\n    Aggregations: SUM, MEAN, MAX, MIN, P25, P50, P75, P90, P95, P98, P99, P99_9, P99_99, DISTINCT_COUNT, SUM_POSITIVE, PER_SECOND, INCREASE\n    Operators: EQUALS, NOT_EQUAL, CONTAINS, NOT_CONTAIN, STARTS_WITH, ENDS_WITH, NOT_STARTS_WITH, NOT_ENDS_WITH, GREATER_THAN, GREATER_OR_EQUAL_THAN, LESS_THAN, LESS_OR_EQUAL_THAN, NOT_EMPTY, IS_EMPTY, NOT_BLANK, IS_BLANK, REGEX_MATCH\n\n    tag_filter_expression: CRITICAL - Entity field REQUIRED for ALL tag filters. ALWAYS set \"entity\": \"NOT_APPLICABLE\" for website beacon tags.\n    time_frame: {\"to\": <timestamp_or_datetime>, \"windowSize\": <milliseconds>} - Default: 3600000 (1 hour)\n        to: Unix timestamp (ms) OR datetime string (e.g., \"19 March 2026, 2:47 PM|IST\")\n\n    Examples:\n        metrics: [{\"metric\": \"beaconCount\", \"aggregation\": \"SUM\"}, {\"metric\": \"onLoadTime\", \"aggregation\": \"P95\"}]\n        tag_filter_expression: {\"type\": \"TAG_FILTER\", \"name\": \"beacon.page.name\", \"operator\": \"CONTAINS\", \"entity\": \"NOT_APPLICABLE\", \"value\": \"checkout\"}\n\n    get_beacon_groups - Use for grouped/aggregated data (e.g., \"beacon count per page\")\n    get_beacons - Use for individual beacon data (e.g., \"list all page load beacons\")\n\nCATALOG (resource_type=\"catalog\"):\n    operations: get_metrics, get_tag_catalog\n    params: {beacon_type, use_case}\n\n    get_metrics - Get website metrics catalog with necessary metadata for query planning (metricId, label, description, formatter, aggregations, beaconTypes). Use returned metricId values exactly; they are authoritative over examples. Use params.view=\"full\" to retrieve raw SDK metadata (rarely needed).\n    get_tag_catalog - Get valid tag names for beacon_type and use_case\n        Valid beacon_type: \"PAGELOAD\", \"PAGECHANGE\", \"RESOURCELOAD\", \"CUSTOM\", \"HTTPREQUEST\", \"ERROR\"\n        Valid use_case: \"GROUPING\", \"FILTERING\", \"SERVICE_MAPPING\", \"SMART_ALERTS\", etc.\n\nCONFIGURATION (resource_type=\"configuration\"):\n    operations: get_all, get\n    params: {website_id, website_name}\n\n    get_all - List all websites\n    get - Get website by ID or name (supports name resolution)\n\n    NOTE: Create, Update, Delete operations are not available.\n          Use the APM UI for website configuration modifications.\n\nADVANCED_CONFIG (resource_type=\"advanced_config\"):\n    operations: get_geo_config, get_ip_masking, get_geo_rules\n    params: {website_id, website_name}\n\n    NOTE: These are READ-ONLY operations for retrieving advanced configurations.\n          Use the APM UI for modifications.\n          Source map operations are not currently available due to authentication limitations.\n\n    get_geo_config - Get geo-location configuration\n        Returns: geoDetailRemoval setting and geoMappingRules array\n    get_ip_masking - Get IP masking configuration\n        Returns: ipMasking setting (DEFAULT, ANONYMIZE_IP, etc.)\n    get_geo_rules - Get custom geo mapping rules\n        Returns: Array of geo mapping rules with CIDR ranges and location data\n\nALERT (resource_type=\"alert\"):\n    operations: find_active_website_alert_configs, find_website_alert_config\n    params: {website_id, alert_ids, id, valid_on}\n\n    find_active_website_alert_configs - Get all alert configurations for a website\n        - website_id: Website ID to get alert configs for (required)\n        - alert_ids: Optional list of specific alert IDs to filter (optional)\n    \n    find_website_alert_config - Get a specific alert configuration by ID\n        - id: Specific alert configuration ID to retrieve (required)\n        - valid_on: Unix timestamp (ms) to retrieve the configuration active at that time (optional, default is latest active version)\n\n\nArgs:\n    resource_type: \"analyze\", \"catalog\", \"configuration\", \"advanced_config\", or \"alert\"\n    operation: Specific operation for the resource type\n    params: Operation-specific parameters (optional)\n\nReturns:\n    Dictionary with results from the appropriate tool\n\nExamples:\n    resource_type=\"catalog\", operation=\"get_tag_catalog\", params={\"beacon_type\": \"PAGELOAD\", \"use_case\": \"GROUPING\"}\n    resource_type=\"analyze\", operation=\"get_beacon_groups\", params={\"metrics\": [{\"metric\": \"beaconCount\", \"aggregation\": \"SUM\"}], \"group\": {\"groupByTag\": \"beacon.page.name\"}, \"time_frame\": {\"to\": \"19 March 2026, 2:47 PM|IST\", \"windowSize\": 3600000}, \"beacon_type\": \"PAGELOAD\"}\n    resource_type=\"analyze\", operation=\"get_beacons\", params={\"time_frame\": {\"to\": 1234567890000, \"windowSize\": 3600000}, \"beacon_type\": \"PAGELOAD\", \"pagination\": {\"retrievalSize\": 50}}\n    resource_type=\"catalog\", operation=\"get_metrics\"\n    resource_type=\"configuration\", operation=\"get_all\"\n    resource_type=\"configuration\", operation=\"get\", params={\"website_name\": \"robot-shop\"}\n    resource_type=\"advanced_config\", operation=\"get_geo_config\", params={\"website_name\": \"robot-shop\"}\n    resource_type=\"alert\", operation=\"find_active_website_alert_configs\", params={\"website_id\": \"website-abc123\"}\n    resource_type=\"alert\", operation=\"find_website_alert_config\", params={\"id\": \"alert-123\", \"valid_on\": 1234567890000}",
+  "backend": "APM (APM / observability)",
+  "family_guess": "apm",
+  "params": [
+   {
+    "name": "resource_type",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "operation",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "params",
+    "type": "object",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "mcp-apm/src/router/website_smart_router.py"
+ },
+ {
+  "name": "create_incident",
+  "description": "Create a new incident in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "short_description",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "caller_id",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "category",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "subcategory",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "priority",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "impact",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "urgency",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assigned_to",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assignment_group",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/incident_tools.py"
+ },
+ {
+  "name": "update_incident",
+  "description": "Update an existing incident in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "incident_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "short_description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "state",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "category",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "subcategory",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "priority",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "impact",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "urgency",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assigned_to",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assignment_group",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "work_notes",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "close_notes",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "close_code",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/incident_tools.py"
+ },
+ {
+  "name": "add_comment",
+  "description": "Add a comment to an incident in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "incident_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "comment",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "is_work_note",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": false
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/incident_tools.py"
+ },
+ {
+  "name": "resolve_incident",
+  "description": "Resolve an incident in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "incident_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "resolution_code",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "resolution_notes",
+    "type": "string",
+    "required": true,
+    "description": ""
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/incident_tools.py"
+ },
+ {
+  "name": "list_incidents",
+  "description": "List incidents from ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 10
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 0
+   },
+   {
+    "name": "state",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assigned_to",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "category",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "query",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "sysparm_query",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/incident_tools.py"
+ },
+ {
+  "name": "get_incident_by_number",
+  "description": "Incident details from ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "incident_number",
+    "type": "string",
+    "required": true,
+    "description": ""
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/incident_tools.py"
+ },
+ {
+  "name": "get_latest_incident",
+  "description": "Get the most recent incident from ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/incident_tools.py"
+ },
+ {
+  "name": "list_catalog_items",
+  "description": "List service catalog items.",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 10
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 0
+   },
+   {
+    "name": "category",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "query",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": true
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sc_cat_item",
+   "/api/now/table/item_option_new",
+   "/api/now/table/sc_category"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/catalog_tools.py"
+ },
+ {
+  "name": "get_catalog_item",
+  "description": "Get a specific service catalog item.",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "item_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sc_cat_item",
+   "/api/now/table/item_option_new",
+   "/api/now/table/sc_category"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/catalog_tools.py"
+ },
+ {
+  "name": "update_catalog_item",
+  "description": "Update a service catalog item.",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "item_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "name",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "short_description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "category",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "price",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "order",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sc_cat_item"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/catalog_optimization.py"
+ },
+ {
+  "name": "list_catalog_categories",
+  "description": "List service catalog categories.",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 10
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 0
+   },
+   {
+    "name": "query",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": true
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sc_cat_item",
+   "/api/now/table/item_option_new",
+   "/api/now/table/sc_category"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/catalog_tools.py"
+ },
+ {
+  "name": "create_catalog_category",
+  "description": "Create a new service catalog category.",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "title",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "parent",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "icon",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": true
+   },
+   {
+    "name": "order",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sc_cat_item",
+   "/api/now/table/item_option_new",
+   "/api/now/table/sc_category"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/catalog_tools.py"
+ },
+ {
+  "name": "update_catalog_category",
+  "description": "Update an existing service catalog category.",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "category_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "title",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "parent",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "icon",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "order",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sc_cat_item",
+   "/api/now/table/item_option_new",
+   "/api/now/table/sc_category"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/catalog_tools.py"
+ },
+ {
+  "name": "move_catalog_items",
+  "description": "Move catalog items to a different category.",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "item_ids",
+    "type": "array",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "target_category_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sc_cat_item",
+   "/api/now/table/item_option_new",
+   "/api/now/table/sc_category"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/catalog_tools.py"
+ },
+ {
+  "name": "get_optimization_recommendations",
+  "description": "Get optimization recommendations for the service catalog.",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "recommendation_types",
+    "type": "array",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "category_id",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sc_cat_item"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/catalog_optimization.py"
+ },
+ {
+  "name": "create_catalog_item_variable",
+  "description": "Create a new catalog item variable",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "catalog_item_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "name",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "type",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "label",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "mandatory",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": false
+   },
+   {
+    "name": "help_text",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "default_value",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "order",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "reference_table",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "reference_qualifier",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "max_length",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "min",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "max",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/item_option_new"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/catalog_variables.py"
+ },
+ {
+  "name": "list_catalog_item_variables",
+  "description": "List catalog item variables",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "catalog_item_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "include_details",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": true
+   },
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/item_option_new"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/catalog_variables.py"
+ },
+ {
+  "name": "update_catalog_item_variable",
+  "description": "Update a catalog item variable",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "variable_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "label",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "mandatory",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "help_text",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "default_value",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "order",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "reference_qualifier",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "max_length",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "min",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "max",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/item_option_new"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/catalog_variables.py"
+ },
+ {
+  "name": "create_change_request",
+  "description": "Create a new change request in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "short_description",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "type",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "risk",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "impact",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "category",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "requested_by",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assignment_group",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "start_date",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "end_date",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/change_request",
+   "/api/now/table/change_task",
+   "/api/now/table/sysapproval_approver"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/change_tools.py"
+ },
+ {
+  "name": "update_change_request",
+  "description": "Update an existing change request in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "change_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "short_description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "state",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "risk",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "impact",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "category",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assignment_group",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "start_date",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "end_date",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "work_notes",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/change_request",
+   "/api/now/table/change_task",
+   "/api/now/table/sysapproval_approver"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/change_tools.py"
+ },
+ {
+  "name": "list_change_requests",
+  "description": "List change requests from ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 10
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 0
+   },
+   {
+    "name": "state",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "type",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "category",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assignment_group",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "timeframe",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "query",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/change_request",
+   "/api/now/table/change_task",
+   "/api/now/table/sysapproval_approver"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/change_tools.py"
+ },
+ {
+  "name": "get_change_request_details",
+  "description": "Get detailed information about a specific change request",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "change_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/change_request",
+   "/api/now/table/change_task",
+   "/api/now/table/sysapproval_approver"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/change_tools.py"
+ },
+ {
+  "name": "add_change_task",
+  "description": "Add a task to a change request",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "change_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "short_description",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assigned_to",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "planned_start_date",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "planned_end_date",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/change_request",
+   "/api/now/table/change_task",
+   "/api/now/table/sysapproval_approver"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/change_tools.py"
+ },
+ {
+  "name": "submit_change_for_approval",
+  "description": "Submit a change request for approval",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "change_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "approval_comments",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/change_request",
+   "/api/now/table/change_task",
+   "/api/now/table/sysapproval_approver"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/change_tools.py"
+ },
+ {
+  "name": "approve_change",
+  "description": "Approve a change request",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "change_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "approver_id",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "approval_comments",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/change_request",
+   "/api/now/table/change_task",
+   "/api/now/table/sysapproval_approver"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/change_tools.py"
+ },
+ {
+  "name": "reject_change",
+  "description": "Reject a change request",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "change_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "approver_id",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "rejection_reason",
+    "type": "string",
+    "required": true,
+    "description": ""
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/change_request",
+   "/api/now/table/change_task",
+   "/api/now/table/sysapproval_approver"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/change_tools.py"
+ },
+ {
+  "name": "list_workflows",
+  "description": "List workflows from ITSM",
+  "backend": "Resilience (resilience / compliance / security)",
+  "family_guess": "resilience",
+  "params": [
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 10
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 0
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "name",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "query",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/core/api/v1/login",
+   "/core/api/v1/authenticate",
+   "https://tenant-host",
+   "/api/v1/...",
+   "/core/api/v1/",
+   "/core/api/v1/applications",
+   "/core/api/v1/applications/{app_id}",
+   "/core/api/v1/applications/{app_id}/topology"
+  ],
+  "source_file": "resilience/base_client.py"
+ },
+ {
+  "name": "get_workflow_details",
+  "description": "Get detailed information about a specific workflow",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "workflow_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "include_versions",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": false
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/wf_workflow",
+   "/api/now/table/wf_workflow_version",
+   "/api/now/table/wf_activity"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/workflow_tools.py"
+ },
+ {
+  "name": "list_workflow_versions",
+  "description": "List workflow versions from ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "workflow_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 10
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 0
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/wf_workflow",
+   "/api/now/table/wf_workflow_version",
+   "/api/now/table/wf_activity"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/workflow_tools.py"
+ },
+ {
+  "name": "get_workflow_activities",
+  "description": "Get activities for a specific workflow",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "workflow_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "version",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/wf_workflow",
+   "/api/now/table/wf_workflow_version",
+   "/api/now/table/wf_activity"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/workflow_tools.py"
+ },
+ {
+  "name": "create_workflow",
+  "description": "Create a new workflow in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "name",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "table",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": true
+   },
+   {
+    "name": "attributes",
+    "type": "object",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/wf_workflow",
+   "/api/now/table/wf_workflow_version",
+   "/api/now/table/wf_activity"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/workflow_tools.py"
+ },
+ {
+  "name": "update_workflow",
+  "description": "Update an existing workflow in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "workflow_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "name",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "table",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "attributes",
+    "type": "object",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/wf_workflow",
+   "/api/now/table/wf_workflow_version",
+   "/api/now/table/wf_activity"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/workflow_tools.py"
+ },
+ {
+  "name": "activate_workflow",
+  "description": "Activate a workflow in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "workflow_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/wf_workflow",
+   "/api/now/table/wf_workflow_version",
+   "/api/now/table/wf_activity"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/workflow_tools.py"
+ },
+ {
+  "name": "deactivate_workflow",
+  "description": "Deactivate a workflow in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "workflow_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/wf_workflow",
+   "/api/now/table/wf_workflow_version",
+   "/api/now/table/wf_activity"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/workflow_tools.py"
+ },
+ {
+  "name": "add_workflow_activity",
+  "description": "Add a new activity to a workflow in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "workflow_version_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "name",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "activity_type",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "attributes",
+    "type": "object",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/wf_workflow",
+   "/api/now/table/wf_workflow_version",
+   "/api/now/table/wf_activity"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/workflow_tools.py"
+ },
+ {
+  "name": "update_workflow_activity",
+  "description": "Update an existing activity in a workflow",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "activity_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "name",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "attributes",
+    "type": "object",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/wf_workflow",
+   "/api/now/table/wf_workflow_version",
+   "/api/now/table/wf_activity"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/workflow_tools.py"
+ },
+ {
+  "name": "delete_workflow_activity",
+  "description": "Delete an activity from a workflow",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "activity_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/wf_workflow",
+   "/api/now/table/wf_workflow_version",
+   "/api/now/table/wf_activity"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/workflow_tools.py"
+ },
+ {
+  "name": "reorder_workflow_activities",
+  "description": "Reorder activities in a workflow",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "workflow_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "activity_ids",
+    "type": "array",
+    "required": true,
+    "description": ""
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/wf_workflow",
+   "/api/now/table/wf_workflow_version",
+   "/api/now/table/wf_activity"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/workflow_tools.py"
+ },
+ {
+  "name": "list_changesets",
+  "description": "List changesets from ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 10
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 0
+   },
+   {
+    "name": "state",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "application",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "developer",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "timeframe",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "query",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sys_update_set",
+   "/api/now/table/sys_update_xml"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/changeset_tools.py"
+ },
+ {
+  "name": "get_changeset_details",
+  "description": "Get detailed information about a specific changeset",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "changeset_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sys_update_set",
+   "/api/now/table/sys_update_xml"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/changeset_tools.py"
+ },
+ {
+  "name": "create_changeset",
+  "description": "Create a new changeset in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "name",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "application",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "developer",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sys_update_set",
+   "/api/now/table/sys_update_xml"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/changeset_tools.py"
+ },
+ {
+  "name": "update_changeset",
+  "description": "Update an existing changeset in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "changeset_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "name",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "state",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "developer",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sys_update_set",
+   "/api/now/table/sys_update_xml"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/changeset_tools.py"
+ },
+ {
+  "name": "commit_changeset",
+  "description": "Commit a changeset in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "changeset_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "commit_message",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sys_update_set",
+   "/api/now/table/sys_update_xml"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/changeset_tools.py"
+ },
+ {
+  "name": "publish_changeset",
+  "description": "Publish a changeset in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "changeset_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "publish_notes",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sys_update_set",
+   "/api/now/table/sys_update_xml"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/changeset_tools.py"
+ },
+ {
+  "name": "add_file_to_changeset",
+  "description": "Add a file to a changeset in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "changeset_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "file_path",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "file_content",
+    "type": "string",
+    "required": true,
+    "description": ""
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sys_update_set",
+   "/api/now/table/sys_update_xml"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/changeset_tools.py"
+ },
+ {
+  "name": "list_script_includes",
+  "description": "List script includes from ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 10
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 0
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "client_callable",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "query",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sys_script_include"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/script_include_tools.py"
+ },
+ {
+  "name": "get_script_include",
+  "description": "Get a specific script include from ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "script_include_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sys_script_include"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/script_include_tools.py"
+ },
+ {
+  "name": "create_script_include",
+  "description": "Create a new script include in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "name",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "script",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "api_name",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "client_callable",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": false
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": true
+   },
+   {
+    "name": "access",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": "package_private"
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sys_script_include"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/script_include_tools.py"
+ },
+ {
+  "name": "update_script_include",
+  "description": "Update an existing script include in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "script_include_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "script",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "api_name",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "client_callable",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "access",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sys_script_include"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/script_include_tools.py"
+ },
+ {
+  "name": "delete_script_include",
+  "description": "Delete a script include in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "script_include_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/sys_script_include"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/script_include_tools.py"
+ },
+ {
+  "name": "create_knowledge_base",
+  "description": "Create a new knowledge base in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "title",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "owner",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "managers",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "publish_workflow",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": "Knowledge - Instant Publish"
+   },
+   {
+    "name": "retire_workflow",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": "Knowledge - Instant Retire"
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/knowledge_base.py"
+ },
+ {
+  "name": "list_knowledge_bases",
+  "description": "List knowledge bases from ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 10
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 0
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "query",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/knowledge_base.py"
+ },
+ {
+  "name": "create_category",
+  "description": "Create a new category in a knowledge base",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "title",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "knowledge_base",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "parent_category",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "parent_table",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": true
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/knowledge_base.py"
+ },
+ {
+  "name": "list_categories",
+  "description": "List categories in a knowledge base",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "knowledge_base",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "parent_category",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 10
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 0
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "query",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/knowledge_base.py"
+ },
+ {
+  "name": "create_article",
+  "description": "Create a new knowledge article",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "title",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "text",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "short_description",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "knowledge_base",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "category",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "keywords",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "article_type",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": "html"
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/knowledge_base.py"
+ },
+ {
+  "name": "update_article",
+  "description": "Update an existing knowledge article",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "article_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "title",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "text",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "short_description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "category",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "keywords",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/knowledge_base.py"
+ },
+ {
+  "name": "publish_article",
+  "description": "Publish a knowledge article",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "article_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "workflow_state",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": "published"
+   },
+   {
+    "name": "workflow_version",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/knowledge_base.py"
+ },
+ {
+  "name": "list_articles",
+  "description": "List knowledge articles",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 10
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 0
+   },
+   {
+    "name": "knowledge_base",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "category",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "query",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "workflow_state",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/knowledge_base.py"
+ },
+ {
+  "name": "get_article",
+  "description": "Get a specific knowledge article by ID",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "article_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/knowledge_base.py"
+ },
+ {
+  "name": "create_user",
+  "description": "Create a new user in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "user_name",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "first_name",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "last_name",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "email",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "title",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "department",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "manager",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "roles",
+    "type": "array",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "phone",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "mobile_phone",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "location",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "password",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": true
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/user_tools.py"
+ },
+ {
+  "name": "update_user",
+  "description": "Update an existing user in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "user_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "user_name",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "first_name",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "last_name",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "email",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "title",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "department",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "manager",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "roles",
+    "type": "array",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "phone",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "mobile_phone",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "location",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "password",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/user_tools.py"
+ },
+ {
+  "name": "get_user",
+  "description": "Get a specific user in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "user_id",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "user_name",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "email",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/user_tools.py"
+ },
+ {
+  "name": "list_users",
+  "description": "List users in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 10
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 0
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "department",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "query",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/user_tools.py"
+ },
+ {
+  "name": "create_group",
+  "description": "Create a new group in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "name",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "manager",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "parent",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "type",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "email",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "members",
+    "type": "array",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": true
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/user_tools.py"
+ },
+ {
+  "name": "update_group",
+  "description": "Update an existing group in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "group_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "name",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "manager",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "parent",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "type",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "email",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/user_tools.py"
+ },
+ {
+  "name": "add_group_members",
+  "description": "Add members to an existing group in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "group_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "members",
+    "type": "array",
+    "required": true,
+    "description": ""
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/user_tools.py"
+ },
+ {
+  "name": "remove_group_members",
+  "description": "Remove members from an existing group in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "group_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "members",
+    "type": "array",
+    "required": true,
+    "description": ""
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/user_tools.py"
+ },
+ {
+  "name": "list_groups",
+  "description": "List groups from ITSM with optional filtering",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 10
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 0
+   },
+   {
+    "name": "active",
+    "type": "boolean",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "query",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "type",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/user_tools.py"
+ },
+ {
+  "name": "create_story",
+  "description": "Create a new story in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "short_description",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "acceptance_criteria",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "state",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assignment_group",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "story_points",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 10
+   },
+   {
+    "name": "assigned_to",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "epic",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "project",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "work_notes",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/rm_story",
+   "/api/now/table/m2m_story_dependencies"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/story_tools.py"
+ },
+ {
+  "name": "update_story",
+  "description": "Update an existing story in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "story_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "short_description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "acceptance_criteria",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "state",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assignment_group",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "story_points",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assigned_to",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "epic",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "project",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "work_notes",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/rm_story",
+   "/api/now/table/m2m_story_dependencies"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/story_tools.py"
+ },
+ {
+  "name": "list_stories",
+  "description": "List stories from ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 10
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 0
+   },
+   {
+    "name": "state",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assignment_group",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "timeframe",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "query",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/rm_story",
+   "/api/now/table/m2m_story_dependencies"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/story_tools.py"
+ },
+ {
+  "name": "list_story_dependencies",
+  "description": "List story dependencies from ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 10
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 0
+   },
+   {
+    "name": "query",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "dependent_story",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "prerequisite_story",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/rm_story",
+   "/api/now/table/m2m_story_dependencies"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/story_tools.py"
+ },
+ {
+  "name": "create_story_dependency",
+  "description": "Create a dependency between two stories in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "dependent_story",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "prerequisite_story",
+    "type": "string",
+    "required": true,
+    "description": ""
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/rm_story",
+   "/api/now/table/m2m_story_dependencies"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/story_tools.py"
+ },
+ {
+  "name": "delete_story_dependency",
+  "description": "Delete a story dependency in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "dependency_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/rm_story",
+   "/api/now/table/m2m_story_dependencies"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/story_tools.py"
+ },
+ {
+  "name": "create_epic",
+  "description": "Create a new epic in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "short_description",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "priority",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "state",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assignment_group",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assigned_to",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "work_notes",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/rm_epic"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/epic_tools.py"
+ },
+ {
+  "name": "update_epic",
+  "description": "Update an existing epic in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "epic_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "short_description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "priority",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "state",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assignment_group",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assigned_to",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "work_notes",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/rm_epic"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/epic_tools.py"
+ },
+ {
+  "name": "list_epics",
+  "description": "List epics from ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 10
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 0
+   },
+   {
+    "name": "priority",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assignment_group",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "timeframe",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "query",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/rm_epic"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/epic_tools.py"
+ },
+ {
+  "name": "create_scrum_task",
+  "description": "Create a new scrum task in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "story",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "short_description",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "priority",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "planned_hours",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "remaining_hours",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "hours",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "type",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "state",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assignment_group",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assigned_to",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "work_notes",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/rm_scrum_task"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/scrum_task_tools.py"
+ },
+ {
+  "name": "update_scrum_task",
+  "description": "Update an existing scrum task in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "scrum_task_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "short_description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "priority",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "planned_hours",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "remaining_hours",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "hours",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "type",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "state",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assignment_group",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assigned_to",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "work_notes",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/rm_scrum_task"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/scrum_task_tools.py"
+ },
+ {
+  "name": "list_scrum_tasks",
+  "description": "List scrum tasks from ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 10
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 0
+   },
+   {
+    "name": "state",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assignment_group",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "timeframe",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "query",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/rm_scrum_task"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/scrum_task_tools.py"
+ },
+ {
+  "name": "create_project",
+  "description": "Create a new project in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "short_description",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "status",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "state",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "project_manager",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "percentage_complete",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assignment_group",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assigned_to",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "start_date",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "end_date",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/pm_project"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/project_tools.py"
+ },
+ {
+  "name": "update_project",
+  "description": "Update an existing project in ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "project_id",
+    "type": "string",
+    "required": true,
+    "description": ""
+   },
+   {
+    "name": "short_description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "description",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "status",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "state",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "project_manager",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "percentage_complete",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assignment_group",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assigned_to",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "start_date",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "end_date",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/pm_project"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/project_tools.py"
+ },
+ {
+  "name": "list_projects",
+  "description": "List projects from ITSM",
+  "backend": "ITSM (ITSM)",
+  "family_guess": "itsm",
+  "params": [
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 10
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "",
+    "default": 0
+   },
+   {
+    "name": "state",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "assignment_group",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "timeframe",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   },
+   {
+    "name": "query",
+    "type": "string",
+    "required": false,
+    "description": "",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/api/now/table/pm_project"
+  ],
+  "source_file": "itsm-mcp/src/itsm_mcp/tools/project_tools.py"
+ },
+ {
+  "name": "query_finops_cost_report",
+  "description": "Run an FinOpsSuite FinOps v3 cost report. Wraps GET /reporting/cost/run. Pass `filters` as a list of `key==value` strings to scope to a specific service or resource.",
+  "backend": "finops (multi-cloud cost / FinOps)",
+  "family_guess": "cost",
+  "params": [
+   {
+    "name": "start_date",
+    "type": "string",
+    "required": true,
+    "description": "ISO 'YYYY-MM-DD' (start, inclusive)."
+   },
+   {
+    "name": "end_date",
+    "type": "string",
+    "required": true,
+    "description": "ISO 'YYYY-MM-DD' (end, inclusive)."
+   },
+   {
+    "name": "dimensions",
+    "type": "array",
+    "required": false,
+    "description": "Group-by dimensions. Common: 'vendor', 'service_name', 'enhanced_service_name', 'region', 'resource_identifier'.",
+    "default": null
+   },
+   {
+    "name": "metrics",
+    "type": "array",
+    "required": false,
+    "description": "Cost metrics. Common: 'unblended_cost', 'total_amortized_cost', 'usage_quantity'.",
+    "default": null
+   },
+   {
+    "name": "filters",
+    "type": "array",
+    "required": false,
+    "description": "FinOps filter expressions, each '<dimension><op><value>'. Operators: '==', '!=', '=@' (contains), '!@'. Repeatable.",
+    "default": null
+   },
+   {
+    "name": "sort",
+    "type": "string",
+    "required": false,
+    "description": "Sort spec, e.g. '-unblended_cost'.",
+    "default": null
+   },
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "Row cap.",
+    "default": null
+   },
+   {
+    "name": "offset",
+    "type": "integer",
+    "required": false,
+    "description": "Row offset.",
+    "default": null
+   },
+   {
+    "name": "view_id",
+    "type": "integer|string",
+    "required": false,
+    "description": "Saved-view id.",
+    "default": null
+   },
+   {
+    "name": "api_key",
+    "type": "string",
+    "required": false,
+    "description": "Per-call API key override (else uses FINOPS_API_KEY env).",
+    "default": null
+   },
+   {
+    "name": "api_url",
+    "type": "string",
+    "required": false,
+    "description": "Per-call base URL override.",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "finops/tools.py"
+ },
+ {
+  "name": "query_finops_rightsizing",
+  "description": "Fetch FinOps rightsizing recommendations for a vendor and resource type (e.g. vendor=aws, resource=ec2).",
+  "backend": "finops (multi-cloud cost / FinOps)",
+  "family_guess": "cost",
+  "params": [
+   {
+    "name": "vendor",
+    "type": "string",
+    "required": false,
+    "description": "'aws' or 'azure'.",
+    "default": "aws"
+   },
+   {
+    "name": "resource",
+    "type": "string",
+    "required": false,
+    "description": "'ec2', 'rds', 'asg', 'compute', etc.",
+    "default": "ec2"
+   },
+   {
+    "name": "api_key",
+    "type": "string",
+    "required": false,
+    "description": "Per-call API key.",
+    "default": null
+   },
+   {
+    "name": "api_url",
+    "type": "string",
+    "required": false,
+    "description": "Per-call base URL.",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "finops/tools.py"
+ },
+ {
+  "name": "query_finops_anomalies",
+  "description": "Fetch detected cost anomalies. Both dates optional; FinOps uses its own default window when omitted.",
+  "backend": "finops (multi-cloud cost / FinOps)",
+  "family_guess": "cost",
+  "params": [
+   {
+    "name": "start_date",
+    "type": "string",
+    "required": false,
+    "description": "ISO 'YYYY-MM-DD'.",
+    "default": null
+   },
+   {
+    "name": "end_date",
+    "type": "string",
+    "required": false,
+    "description": "ISO 'YYYY-MM-DD'.",
+    "default": null
+   },
+   {
+    "name": "api_key",
+    "type": "string",
+    "required": false,
+    "description": "Per-call API key.",
+    "default": null
+   },
+   {
+    "name": "api_url",
+    "type": "string",
+    "required": false,
+    "description": "Per-call base URL.",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "finops/tools.py"
+ },
+ {
+  "name": "query_finops_billing_accounts",
+  "description": "List billing accounts for a vendor (or all vendors when omitted).",
+  "backend": "finops (multi-cloud cost / FinOps)",
+  "family_guess": "cost",
+  "params": [
+   {
+    "name": "vendor",
+    "type": "string",
+    "required": false,
+    "description": "'aws', 'azure', 'gcp', 'oci'. Omit for all.",
+    "default": null
+   },
+   {
+    "name": "api_key",
+    "type": "string",
+    "required": false,
+    "description": "Per-call API key.",
+    "default": null
+   },
+   {
+    "name": "api_url",
+    "type": "string",
+    "required": false,
+    "description": "Per-call base URL.",
+    "default": null
+   }
+  ],
+  "api_hints": [],
+  "source_file": "finops/tools.py"
+ },
+ {
+  "name": "query_infra_nl2iql",
+  "description": "Generate an HCP Infra IQL query string from a natural-language description. Does NOT execute the query \u2014 returns the IQL for the agent to inspect / dispatch. Requires LLM credentials (LITELLM_API_KEY + LITELLM_BASE_URL) and optionally HCP credentials (HCP_ORG_ID + HCP_TOKEN) when INFRA_SCHEMA_PATH=api so the live schema can be fetched.",
+  "backend": "Infra (cloud infrastructure graph)",
+  "family_guess": "infra",
+  "params": [
+   {
+    "name": "natural_language_query",
+    "type": "string",
+    "required": true,
+    "description": "What you want to ask of HCP Infra in plain English. Example: 'list all AWS EC2 instances tagged environment=prod across all accounts'."
+   },
+   {
+    "name": "service",
+    "type": "string",
+    "required": false,
+    "description": "LLM service backend. Only LITELLM is supported today; we hit the litellm proxy via an OpenAI-compatible client.",
+    "default": "LITELLM"
+   },
+   {
+    "name": "model_name",
+    "type": "string",
+    "required": false,
+    "description": "Model identifier passed through to the LITELLM proxy (e.g. 'gcp/claude-sonnet-4-5').",
+    "default": "aws/claude-opus-4-6"
+   },
+   {
+    "name": "temperature",
+    "type": "number",
+    "required": false,
+    "description": "Sampling temperature.",
+    "default": 0.1
+   },
+   {
+    "name": "schema_path",
+    "type": "string",
+    "required": false,
+    "description": "Schema source: 'api' to fetch the live schema from HCP Infra, or a local schema directory path.",
+    "default": "api"
+   },
+   {
+    "name": "few_shot_examples_path",
+    "type": "string",
+    "required": false,
+    "description": "Path to the few-shot examples JSON file.",
+    "default": "~/src/mcp_dal/data/infra/categorized_examples.json"
+   },
+   {
+    "name": "few_shot_mode",
+    "type": "string",
+    "required": false,
+    "description": "Few-shot selection mode: 'diverse' or 'all'.",
+    "default": "diverse"
+   }
+  ],
+  "api_hints": [],
+  "source_file": "app/infra_tools.py"
+ },
+ {
+  "name": "query_resilience",
+  "description": "Resilience resilience and compliance queries. One tool with five query types: applications, workflows, compliance_risks, policy_violations, resilience_metrics. Best for Value Added Resiliency use cases like workflow management and compliance tracking.",
+  "backend": "Resilience (resilience / compliance / security)",
+  "family_guess": "resilience",
+  "params": [
+   {
+    "name": "user_query",
+    "type": "string",
+    "required": true,
+    "description": "Natural-language Resilience request. Free-text scoped to the chosen query_type. Examples: 'applications', 'workflows for app:MyApp', 'compliance risks', 'policy violations', 'resilience metrics'."
+   },
+   {
+    "name": "query_type",
+    "type": "string",
+    "required": false,
+    "description": "Resilience endpoint to call.",
+    "enum": [
+     "applications",
+     "workflows",
+     "compliance_risks",
+     "policy_violations",
+     "resilience_metrics"
+    ],
+    "default": "applications"
+   },
+   {
+    "name": "app_id",
+    "type": "string",
+    "required": false,
+    "description": "Optional application ID for scoped queries (workflows, risks, policy_violations, resilience_metrics).",
+    "default": null
+   },
+   {
+    "name": "limit",
+    "type": "integer",
+    "required": false,
+    "description": "Maximum number of results to return.",
+    "default": null
+   },
+   {
+    "name": "severity",
+    "type": "string",
+    "required": false,
+    "description": "Optional severity filter for compliance_risks and policy_violations.",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/core/api/v1/applications",
+   "/core/api/v1/workflows",
+   "/core/api/v1/compliance/risks",
+   "/core/api/v1/compliance/violations",
+   "/core/api/v1/applications/{app_filter}/resilience-metrics",
+   "/api/v1/",
+   "/api/v1/assessment",
+   "/api/v1/posture"
+  ],
+  "source_file": "resilience/tools.py"
+ },
+ {
+  "name": "query_resilience_resilience",
+  "description": "Resilience resilience grader queries. Two query types: 'assessments' lists resilience assessments (paginated), 'posture' returns posture records. Requires a tenant that exposes /resilience/resilience/grader/api/v1/ (verified on the tenant-host tenant).",
+  "backend": "Resilience (resilience / compliance / security)",
+  "family_guess": "resilience",
+  "params": [
+   {
+    "name": "query_type",
+    "type": "string",
+    "required": false,
+    "description": "Resilience grader endpoint to call.",
+    "enum": [
+     "assessments",
+     "posture"
+    ],
+    "default": "assessments"
+   },
+   {
+    "name": "page_size",
+    "type": "integer",
+    "required": false,
+    "description": "Page size for assessments. Ignored for posture.",
+    "default": 100
+   },
+   {
+    "name": "page_number",
+    "type": "integer",
+    "required": false,
+    "description": "Page number for assessments. Ignored for posture.",
+    "default": 1
+   },
+   {
+    "name": "sort_by",
+    "type": "string",
+    "required": false,
+    "description": "Sort key for assessments (default: creation_ts).",
+    "default": "creation_ts"
+   },
+   {
+    "name": "sort_direction",
+    "type": "string",
+    "required": false,
+    "description": "Sort direction for assessments.",
+    "enum": [
+     "asc",
+     "desc"
+    ],
+    "default": "desc"
+   },
+   {
+    "name": "lang_code",
+    "type": "string",
+    "required": false,
+    "description": "Language code for posture. Ignored for assessments.",
+    "default": "en"
+   }
+  ],
+  "api_hints": [
+   "/core/api/v1/applications",
+   "/core/api/v1/workflows",
+   "/core/api/v1/compliance/risks",
+   "/core/api/v1/compliance/violations",
+   "/core/api/v1/applications/{app_filter}/resilience-metrics",
+   "/api/v1/",
+   "/api/v1/assessment",
+   "/api/v1/posture"
+  ],
+  "source_file": "resilience/tools.py"
+ },
+ {
+  "name": "query_resilience_security",
+  "description": "Resilience security risk analysis. Three query types: 'cve_details' fetches a CVE record by id; 'risk_details' and 'risk_status' synthesize risk text from a free-form context string (typically '<CVE-ID> <description>'). Requires a tenant that exposes /resilience/sra/api/v1/ and /resilience/py-utils/v1/ (verified on the tenant-host tenant).",
+  "backend": "Resilience (resilience / compliance / security)",
+  "family_guess": "resilience",
+  "params": [
+   {
+    "name": "query_type",
+    "type": "string",
+    "required": false,
+    "description": "Which SRA endpoint to call.",
+    "enum": [
+     "cve_details",
+     "risk_details",
+     "risk_status"
+    ],
+    "default": "cve_details"
+   },
+   {
+    "name": "cve_id",
+    "type": "string",
+    "required": false,
+    "description": "CVE identifier (e.g. 'CVE-2023-45288'). Required for cve_details; used as the leading token for risk_* if context isn't supplied separately.",
+    "default": null
+   },
+   {
+    "name": "context",
+    "type": "string",
+    "required": false,
+    "description": "Free-form context for risk_details / risk_status. If omitted, the cve_id alone is used as the context.",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/core/api/v1/applications",
+   "/core/api/v1/workflows",
+   "/core/api/v1/compliance/risks",
+   "/core/api/v1/compliance/violations",
+   "/core/api/v1/applications/{app_filter}/resilience-metrics",
+   "/api/v1/",
+   "/api/v1/assessment",
+   "/api/v1/posture"
+  ],
+  "source_file": "resilience/tools.py"
+ },
+ {
+  "name": "trigger_resilience_workflow",
+  "description": "POST /workflows/api/v1/trigger/<urn>. Fires off a named workflow and returns the execution UUID. Use query_resilience_workflow_status to poll for completion. The workflow path (folder + name) identifies which playbook to run; the payload is workflow-specific JSON. URN defaults to the RESILIENCE_USERNAME env.",
+  "backend": "Resilience (resilience / compliance / security)",
+  "family_guess": "resilience",
+  "params": [
+   {
+    "name": "folder",
+    "type": "string",
+    "required": true,
+    "description": "Workflow folder path on the Resilience server, e.g. '/User/Ameya-workflow/APM_Resilience_Sample_V2.2/'."
+   },
+   {
+    "name": "name",
+    "type": "string",
+    "required": true,
+    "description": "Workflow name within the folder."
+   },
+   {
+    "name": "payload",
+    "type": "object",
+    "required": true,
+    "description": "Workflow-specific JSON body. Example for an APM resilience workflow: {'applicationName': 'Quote of the Day', 'apmAuth': 'resilienceuser/Planning-and-Simulation-auth-ameya', 'startTimestamp': 0, 'endTimestamp': 0}."
+   },
+   {
+    "name": "worker_group",
+    "type": "string",
+    "required": false,
+    "description": "Worker group to dispatch to.",
+    "default": "default"
+   },
+   {
+    "name": "event_source",
+    "type": "string",
+    "required": false,
+    "description": "Event source label.",
+    "default": "EDITOR"
+   },
+   {
+    "name": "urn",
+    "type": "string",
+    "required": false,
+    "description": "URN segment of the trigger path. Defaults to RESILIENCE_USERNAME (or 'resilienceuser' if unset).",
+    "default": null
+   }
+  ],
+  "api_hints": [
+   "/core/api/v1/applications",
+   "/core/api/v1/workflows",
+   "/core/api/v1/compliance/risks",
+   "/core/api/v1/compliance/violations",
+   "/core/api/v1/applications/{app_filter}/resilience-metrics",
+   "/api/v1/",
+   "/api/v1/assessment",
+   "/api/v1/posture"
+  ],
+  "source_file": "resilience/tools.py"
+ },
+ {
+  "name": "query_resilience_workflow_status",
+  "description": "GET /workflows/api/v1/stats/log/<execution_uuid>. Returns the workflow's status ('RUNNING'/'QUEUED'/'PENDING'/'COMPLETED'/'FAILED') and full execution log. Use after trigger_resilience_workflow to poll for completion.",
+  "backend": "Resilience (resilience / compliance / security)",
+  "family_guess": "resilience",
+  "params": [
+   {
+    "name": "execution_uuid",
+    "type": "string",
+    "required": true,
+    "description": "UUID returned by trigger_resilience_workflow."
+   }
+  ],
+  "api_hints": [
+   "/core/api/v1/applications",
+   "/core/api/v1/workflows",
+   "/core/api/v1/compliance/risks",
+   "/core/api/v1/compliance/violations",
+   "/core/api/v1/applications/{app_filter}/resilience-metrics",
+   "/api/v1/",
+   "/api/v1/assessment",
+   "/api/v1/posture"
+  ],
+  "source_file": "resilience/tools.py"
+ }
+]

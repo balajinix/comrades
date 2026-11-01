@@ -1,0 +1,15 @@
+{"id": "cost-01", "family": "cost", "prompt": "What are the top cloud costs this month?"}
+{"id": "cost-02", "family": "cost", "prompt": "Show AWS EC2 rightsizing recommendations."}
+{"id": "cost-03", "family": "cost", "prompt": "Are there any cost anomalies in the last 7 days?"}
+{"id": "apm-01", "family": "apm", "prompt": "Show the application topology."}
+{"id": "apm-02", "family": "apm", "prompt": "What is the call volume for the otel-demo application in the last hour?"}
+{"id": "apm-03", "family": "apm", "prompt": "List the application perspectives on the observability platform."}
+{"id": "itsm-01", "family": "itsm", "prompt": "List up to 5 recent incidents."}
+{"id": "itsm-02", "family": "itsm", "prompt": "Show the most recent incident."}
+{"id": "itsm-03", "family": "itsm", "prompt": "Get incident INC0010001 by number."}
+{"id": "resil-01", "family": "resilience", "prompt": "Show the resilience posture for the checkout application."}
+{"id": "resil-02", "family": "resilience", "prompt": "List the most critical compliance risks."}
+{"id": "resil-03", "family": "resilience", "prompt": "What policy violations exist for the production environment?"}
+{"id": "infra-01", "family": "infra", "prompt": "List all AWS EC2 instances tagged environment=prod."}
+{"id": "infra-02", "family": "infra", "prompt": "Show all S3 buckets across accounts."}
+{"id": "infra-03", "family": "infra", "prompt": "Find compute instances in the us-east-1 region."}

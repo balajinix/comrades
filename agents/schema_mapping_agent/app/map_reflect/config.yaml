@@ -1,0 +1,84 @@
+# Map-Reflect Configuration
+# Dataset-specific hyperparameters for schema selection and mapping
+
+# Default configuration (used when dataset not found)
+# Uses strict schema filtering - same approach as GNN for fair comparison
+default:
+  # Number of top results to retrieve from semantic search
+  top_k: 15
+  # Number of neighbor nodes to expand (0 to disable)
+  neighbor_k: 5
+  # Multiplier for initial ChromaDB results before filtering
+  n_results_multiplier: 10
+  # Whether to strictly filter by product/type BEFORE semantic ranking
+  # If true, only properties matching the product are considered
+  strict_schema_filter: true   # Filter by product BEFORE semantic search
+  # Scoring boosts for property filtering
+  product_boost: 200      # Boost for matching product name
+  product_penalty: -200   # Penalty for non-matching product
+  type_exact_boost: 100   # Boost for exact type name match
+  type_partial_boost: 50  # Boost for partial type name match
+  type_field_boost: 20    # Boost for type hint in field name
+
+# ITOps dataset - uses strict schema filtering (same as GNN approach)
+# Filter by product/type FIRST, then apply semantic search within that product
+ITOps:
+  top_k: 15
+  neighbor_k: 5
+  n_results_multiplier: 10
+  strict_schema_filter: true   # Filter by product BEFORE semantic search
+  product_boost: 200           # Stronger boost for correct product
+  product_penalty: -200        # Stronger penalty for wrong product
+  type_exact_boost: 100
+  type_partial_boost: 50
+  type_field_boost: 20
+
+# NL2GQL dataset - all properties under single 'nl2gql' product
+# Disable strict filtering since product extraction from utterances
+# returns table names (resilience, stadium) which don't match the 'nl2gql' product
+NL2GQL:
+  top_k: 15
+  neighbor_k: 5
+  n_results_multiplier: 10
+  strict_schema_filter: false  # Disabled - all props under one product
+  product_boost: 200
+  product_penalty: -200
+  type_exact_boost: 100
+  type_partial_boost: 50
+  type_field_boost: 20
+
+# OMOP datasets - medical domain requires strict schema filtering
+# The semantic similarity between different medical schemas is high,
+# so we need to strictly filter by the extracted product/type first
+OMOP_MIMIC:
+  top_k: 25                    # Higher to get more candidates
+  neighbor_k: 0                # Disable neighbor expansion (adds noise)
+  n_results_multiplier: 20     # Get more initial results
+  strict_schema_filter: true   # CRITICAL: Filter by product/type first
+  product_boost: 200           # Stronger boost for correct product
+  product_penalty: -200        # Stronger penalty for wrong product
+  type_exact_boost: 100        # Much stronger type matching
+  type_partial_boost: 50
+  type_field_boost: 20
+
+OMOP_CMS:
+  top_k: 10                    # 10×10=100 pairs (MAX_NEW_TOKENS=8000)
+  neighbor_k: 0
+  n_results_multiplier: 20
+  strict_schema_filter: true
+  product_boost: 200
+  product_penalty: -200
+  type_exact_boost: 100
+  type_partial_boost: 50
+  type_field_boost: 20
+
+OMOP_Synthea:
+  top_k: 25
+  neighbor_k: 0
+  n_results_multiplier: 20
+  strict_schema_filter: true
+  product_boost: 200
+  product_penalty: -200
+  type_exact_boost: 100
+  type_partial_boost: 50
+  type_field_boost: 20

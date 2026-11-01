@@ -1,0 +1,50 @@
+{"id": "lg-query_finops_rightsizing-7", "family": "cost", "prompt": "Please show the GCP EC2 rightsizing recommendations.", "gold_tool": "query_finops_rightsizing", "source": "templated-large"}
+{"id": "lg-query_finops_cost_report-6", "family": "cost", "prompt": "Using the available data tools, what are the top cloud costs over the last 90 days?", "gold_tool": "query_finops_cost_report", "source": "templated-large"}
+{"id": "lg-query_finops_anomalies-7", "family": "cost", "prompt": "Are there any cloud cost anomalies over the last 90 days?", "gold_tool": "query_finops_anomalies", "source": "templated-large"}
+{"id": "lg-get_finops_cost_estimate-3", "family": "cost", "prompt": "Pull the data to answer: what is the projected cloud spend?", "gold_tool": "get_finops_cost_estimate", "source": "templated-large"}
+{"id": "lg-list_finops_vendors-2", "family": "cost", "prompt": "Can you list the cloud vendors known to the account?", "gold_tool": "list_finops_vendors", "source": "templated-large"}
+{"id": "lg-query_finops_billing_accounts-1", "family": "cost", "prompt": "List the cloud billing accounts.", "gold_tool": "query_finops_billing_accounts", "source": "templated-large"}
+{"id": "lg-list_finops_cost_measures-5", "family": "cost", "prompt": "Using the available data tools, list the available FinOps cost measures.", "gold_tool": "list_finops_cost_measures", "source": "templated-large"}
+{"id": "lg-get_finops_cost_estimate-2", "family": "cost", "prompt": "Using the available data tools, what is the projected cloud spend?", "gold_tool": "get_finops_cost_estimate", "source": "templated-large"}
+{"id": "lg-query_finops_anomalies-1", "family": "cost", "prompt": "Are there any cloud cost anomalies in the last 7 days?", "gold_tool": "query_finops_anomalies", "source": "templated-large"}
+{"id": "lg-query_finops_rightsizing-3", "family": "cost", "prompt": "Using the available data tools, show the Azure EC2 rightsizing recommendations.", "gold_tool": "query_finops_rightsizing", "source": "templated-large"}
+{"id": "lg-get_application_metrics-7", "family": "apm", "prompt": "Can you show the metrics for application 'robot-shop'?", "gold_tool": "get_application_metrics", "source": "templated-large"}
+{"id": "lg-list_apm_application_service_endpoints-2", "family": "apm", "prompt": "Can you list the endpoints for a service in an APM application?", "gold_tool": "list_apm_application_service_endpoints", "source": "templated-large"}
+{"id": "lg-list_mobile_apps-3", "family": "apm", "prompt": "Please list the monitored APM mobile apps.", "gold_tool": "list_mobile_apps", "source": "templated-large"}
+{"id": "lg-list_websites-4", "family": "apm", "prompt": "I need you to list the monitored APM websites.", "gold_tool": "list_websites", "source": "templated-large"}
+{"id": "lg-get_website-1", "family": "apm", "prompt": "Show the details of a specific APM website.", "gold_tool": "get_website", "source": "templated-large"}
+{"id": "lg-get_slo_status-2", "family": "apm", "prompt": "Using the available data tools, what is the current status of a specific SLO?", "gold_tool": "get_slo_status", "source": "templated-large"}
+{"id": "lg-get_mobile_app-5", "family": "apm", "prompt": "Using the available data tools, show the details of a specific APM mobile app.", "gold_tool": "get_mobile_app", "source": "templated-large"}
+{"id": "lg-get_event-4", "family": "apm", "prompt": "I need you to show the details of a specific APM event.", "gold_tool": "get_event", "source": "templated-large"}
+{"id": "lg-get_slo_report-3", "family": "apm", "prompt": "Please show the SLO report for a specific SLO.", "gold_tool": "get_slo_report", "source": "templated-large"}
+{"id": "lg-list_releases-5", "family": "apm", "prompt": "Using the available data tools, list the tracked APM releases.", "gold_tool": "list_releases", "source": "templated-large"}
+{"id": "lg-list_groups-5", "family": "itsm", "prompt": "Using the available data tools, list the ITSM groups.", "gold_tool": "list_groups", "source": "templated-large"}
+{"id": "lg-list_users-3", "family": "itsm", "prompt": "Please list the ITSM users.", "gold_tool": "list_users", "source": "templated-large"}
+{"id": "lg-list_scrum_tasks-4", "family": "itsm", "prompt": "I need you to list the ITSM scrum tasks.", "gold_tool": "list_scrum_tasks", "source": "templated-large"}
+{"id": "lg-list_workflow_versions-5", "family": "itsm", "prompt": "Using the available data tools, list the versions of a ITSM workflow.", "gold_tool": "list_workflow_versions", "source": "templated-large"}
+{"id": "lg-list_articles-1", "family": "itsm", "prompt": "List the ITSM knowledge articles.", "gold_tool": "list_articles", "source": "templated-large"}
+{"id": "lg-list_incidents-3", "family": "itsm", "prompt": "Please list the recent ITSM incidents.", "gold_tool": "list_incidents", "source": "templated-large"}
+{"id": "lg-list_story_dependencies-5", "family": "itsm", "prompt": "Using the available data tools, list the dependencies between ITSM stories.", "gold_tool": "list_story_dependencies", "source": "templated-large"}
+{"id": "lg-list_catalog_item_variables-4", "family": "itsm", "prompt": "I need you to list the variables for a service catalog item.", "gold_tool": "list_catalog_item_variables", "source": "templated-large"}
+{"id": "lg-get_change_request_details-5", "family": "itsm", "prompt": "Using the available data tools, show the details of change request CHG0030001.", "gold_tool": "get_change_request_details", "source": "templated-large"}
+{"id": "lg-list_script_includes-5", "family": "itsm", "prompt": "Using the available data tools, list the ITSM script includes.", "gold_tool": "list_script_includes", "source": "templated-large"}
+{"id": "lg-list_infra_saved_queries-1", "family": "infra", "prompt": "List the saved infrastructure graph queries.", "gold_tool": "list_infra_saved_queries", "source": "templated-large"}
+{"id": "lg-query_infra_nl2iql-7", "family": "infra", "prompt": "Can you generate an IQL query to list all RDS databases?", "gold_tool": "query_infra_nl2iql", "source": "templated-large"}
+{"id": "lg-get_infra_node_by_resource_id-3", "family": "infra", "prompt": "Please find the infrastructure node for a given business resource ID.", "gold_tool": "get_infra_node_by_resource_id", "source": "templated-large"}
+{"id": "lg-list_infra_edge_inventory-2", "family": "infra", "prompt": "Using the available data tools, how many relationships of each type are in the infrastructure graph?", "gold_tool": "list_infra_edge_inventory", "source": "templated-large"}
+{"id": "lg-execute_infra_iql-2", "family": "infra", "prompt": "Can you run an IQL query against the infrastructure graph and return the results?", "gold_tool": "execute_infra_iql", "source": "templated-large"}
+{"id": "lg-list_infra_edge_schemas-2", "family": "infra", "prompt": "Using the available data tools, what relationship types exist in the infrastructure graph?", "gold_tool": "list_infra_edge_schemas", "source": "templated-large"}
+{"id": "lg-get_infra_graph_sync_status-1", "family": "infra", "prompt": "What is the sync status of the infrastructure graph?", "gold_tool": "get_infra_graph_sync_status", "source": "templated-large"}
+{"id": "lg-get_infra_one_hop_neighbors-3", "family": "infra", "prompt": "Pull the data to answer: what are the one-hop neighbors of a given infrastructure node?", "gold_tool": "get_infra_one_hop_neighbors", "source": "templated-large"}
+{"id": "lg-list_infra_node_inventory-3", "family": "infra", "prompt": "Pull the data to answer: how many nodes of each type are in the infrastructure graph?", "gold_tool": "list_infra_node_inventory", "source": "templated-large"}
+{"id": "lg-get_infra_connection-2", "family": "infra", "prompt": "Can you show the details of a specific infrastructure graph data connection?", "gold_tool": "get_infra_connection", "source": "templated-large"}
+{"id": "lg-get_resilience_resilience_metrics-3", "family": "resilience", "prompt": "Please show the resilience metrics for a Resilience application.", "gold_tool": "get_resilience_resilience_metrics", "source": "templated-large"}
+{"id": "lg-query_resilience_resilience-1", "family": "resilience", "prompt": "List the Resilience resilience assessments.", "gold_tool": "query_resilience_resilience", "source": "templated-large"}
+{"id": "lg-list_resilience_policy_violations-3", "family": "resilience", "prompt": "Please list the Resilience policy violations.", "gold_tool": "list_resilience_policy_violations", "source": "templated-large"}
+{"id": "lg-get_resilience_application_topology-1", "family": "resilience", "prompt": "Show the application topology in Resilience.", "gold_tool": "get_resilience_application_topology", "source": "templated-large"}
+{"id": "lg-list_resilience_compliance_risks-2", "family": "resilience", "prompt": "Can you list the Resilience compliance risks?", "gold_tool": "list_resilience_compliance_risks", "source": "templated-large"}
+{"id": "lg-get_resilience_risk_status-3", "family": "resilience", "prompt": "Pull the data to answer: what is the risk status for a given context in Resilience?", "gold_tool": "get_resilience_risk_status", "source": "templated-large"}
+{"id": "lg-get_resilience_compliance_status-1", "family": "resilience", "prompt": "What is the compliance status in Resilience?", "gold_tool": "get_resilience_compliance_status", "source": "templated-large"}
+{"id": "lg-get_resilience_risk_details-5", "family": "resilience", "prompt": "Using the available data tools, show the risk details for a Resilience finding.", "gold_tool": "get_resilience_risk_details", "source": "templated-large"}
+{"id": "lg-query_resilience-6", "family": "resilience", "prompt": "I need you to show the Resilience resilience and compliance overview for application 'var-scenarios-otel-demo'.", "gold_tool": "query_resilience", "source": "templated-large"}
+{"id": "lg-get_resilience_slo_status-2", "family": "resilience", "prompt": "Can you show the SLO status for a Resilience application?", "gold_tool": "get_resilience_slo_status", "source": "templated-large"}

@@ -1,0 +1,11 @@
+query
+"Create a time series graph of the calls_per_second metric for each endpoint_label."
+"Plot a bar chart comparing latency_mean of all endpoints grouped by endpoint_type.
+"Generate a pie chart of the proportion of total calls (calls_sum) made to each endpoint_type."
+"Create a line chart of erroneousCalls_per_second over time for the top 5 most-used endpoints."
+"Create a scatter plot of latency_mean vs calls_per_second to identify performance bottlenecks."
+"Draw a stacked bar chart showing calls_sum for each endpoint_label grouped by service_id."
+"Create a histogram showing the distribution of latency_max across all endpoints."
+"Generate a box plot of latency_mean grouped by endpoint_type."
+"Create a time series area chart for cumulative calls_sum for each service_id."
+"Generate a dual-axis time series chart for calls_per_second and erroneousCalls_per_second of a selected endpoint."
